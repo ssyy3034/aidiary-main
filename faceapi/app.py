@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import os
 from face_analyzer import analyze_face
 from extract_features import extract_features
+from prompt_generator import generate_prompt
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "./uploads/"
@@ -32,9 +33,13 @@ def analyze():
         parent1_features = extract_features(parent1_data)
         parent2_features = extract_features(parent2_data)
 
+        # GPT 프롬프트 생성
+        prompt = generate_prompt(parent1_features, parent2_features)
+
         return jsonify({
             "parent1_features": parent1_features,
-            "parent2_features": parent2_features
+            "parent2_features": parent2_features,
+            "prompt": prompt
         })
 
     except Exception as e:
@@ -42,3 +47,4 @@ def analyze():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)
+
