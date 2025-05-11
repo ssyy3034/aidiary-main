@@ -1,0 +1,2 @@
+# config.py
+AILAB_API_KEY = "2en9VSKfYomuuGLUa6I7DOKFpANWURzOg8pbLISJsvvxZkAFqXsCPEyWEiBtwQlt"

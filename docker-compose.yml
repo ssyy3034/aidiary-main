@@ -14,6 +14,7 @@ services:
       - mariadb_data:/var/lib/mysql
     restart: unless-stopped
 
+
   aidiary-app:
     build: .
     container_name: aidiary-app
@@ -31,6 +32,12 @@ services:
     restart: on-failure
     volumes:
       - logs:/app/logs
+
+  face-api:
+    build: ./faceapi
+    ports:
+      - "5001:5001"
+
 
 volumes:
   mariadb_data:
