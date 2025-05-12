@@ -1,0 +1,48 @@
+import React, { useState } from 'react';
+import axios from 'axios';
+
+function FaceAnalyzeForm() {
+  const [result, setResult] = useState(null);
+  const [status, setStatus] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus('분석 중...');
+    setResult(null);
+
+    const formData = new FormData();
+    formData.append('parent1', e.target.parent1.files[0]);
+    formData.append('parent2', e.target.parent2.files[0]);
+
+    try {
+      const res = await axios.post('http://localhost:5001/analyze', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setResult(res.data);
+      setStatus('분석 성공!');
+    } catch (err) {
+      setStatus('서버 연결 실패');
+    }
+  };
+
+  return (
+    <div>
+      <form onSubmit={handleSubmit}>
+        <input type="file" name="parent1" accept="image/*" required />
+        <input type="file" name="parent2" accept="image/*" required />
+        <button type="submit">분석하기</button>
+      </form>
+      <div>{status}</div>
+      {result && (
+        <div>
+          <h3>분석 결과</h3>
+          <pre>{JSON.stringify(result, null, 2)}</pre>
+          <h4>GPT 결과</h4>
+          <div>{result.gpt_response}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default FaceAnalyzeForm;
