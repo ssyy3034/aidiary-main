@@ -37,3 +37,11 @@ out/
 .vscode/
 
 /faceapi/.env
+
+/node_modules
+/.cache
+*.pack
+
+/node_modules
+/.cache
+*.pack
