@@ -1,25 +1,60 @@
 def extract_features(face_data):
     """
-    AILabTools API 응답에서 주요 특징을 추출하는 함수
-
-    Parameters:
-        face_data (dict): AILabTools API에서 반환된 얼굴 분석 데이터
-
-    Returns:
-        dict: 추출된 얼굴 특징 정보
+    얼굴 특징 추출 함수 (age, gender, emotion, hair_length 제외)
     """
-    if "face_detail_infos" in face_data and face_data["face_detail_infos"]:
-        face_info = face_data["face_detail_infos"][0]["face_detail_attributes_info"]
+    if not face_data or "face_detail_infos" not in face_data:
+        print("[DEBUG] No 'face_detail_infos' key found in the response.")
+        return {"error": "No face data found or analysis failed."}
 
-        return {
-            "age": face_info.get("age", 0),
-            "beauty": face_info.get("beauty", 0),
-            "gender": "Male" if face_info["gender"]["type"] == 0 else "Female",
-            "emotion": face_info["emotion"]["type"],
-            "emotion_probability": face_info["emotion"]["probability"],
-            "smile": face_info.get("smile", 0)
-        }
+    face_info_list = face_data.get("face_detail_infos", [])
+    if not face_info_list:
+        print("[DEBUG] 'face_detail_infos' is empty.")
+        return {"error": "No face data found in the response."}
+
+    face_info = face_info_list[0].get("face_detail_attributes_info", {})
+    if not face_info:
+        print("[DEBUG] 'face_detail_attributes_info' is missing.")
+        return {"error": "No face attributes info found in the response."}
+
+    def get_feature(data, path, default=None):
+        keys = path.split(".")
+        for key in keys:
+            if not isinstance(data, dict) or key not in data:
+                return default
+            data = data[key]
+        return data
+
+    def map_eye_size(value):
+        sizes = ["Small", "Normal", "Large"]
+        return sizes[value] if isinstance(value, int) and 0 <= value < len(sizes) else "Not Detected"
+
+    def map_nose_shape(value):
+        shapes = ["Upturned", "Hooked", "Normal", "Round"]
+        return shapes[value] if isinstance(value, int) and 0 <= value < len(shapes) else "Not Detected"
+
+    def map_face_shape(value):
+        shapes = ["Square", "Triangle", "Oval", "Heart", "Round"]
+        return shapes[value] if isinstance(value, int) and 0 <= value < len(shapes) else "Not Detected"
+
+    def map_skin_color(value):
+        colors = ["Yellow", "Brown", "Black", "White"]
+        return colors[value] if isinstance(value, int) and 0 <= value < len(colors) else "Not Detected"
+
+    def map_hair_color(value):
+        colors = ["Black", "Blonde", "Brown", "Grey/White"]
+        return colors[value] if isinstance(value, int) and 0 <= value < len(colors) else "Not Detected"
+
 
     return {
-        "error": "No face data found or analysis failed."
+        "eye_size": map_eye_size(get_feature(face_info, "eye.eye_size.type")),
+        "nose_shape": map_nose_shape(get_feature(face_info, "nose.type")),
+        "face_shape": map_face_shape(get_feature(face_info, "shape.type")),
+        "hair_color": map_hair_color(get_feature(face_info, "hair.color.type")),
+        "skin_color": map_skin_color(get_feature(face_info, "skin.type")),
+        "smile": get_feature(face_info, "smile", 0),
+        "head_pose": {
+            "pitch": get_feature(face_info, "head_pose.pitch", 0),
+            "yaw": get_feature(face_info, "head_pose.yaw", 0),
+            "roll": get_feature(face_info, "head_pose.roll", 0)
+        }
     }

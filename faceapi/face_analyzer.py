@@ -1,53 +1,85 @@
+import os
 import requests
-import json
+from PIL import Image
 
-# API 엔드포인트
-url = "https://www.ailabapi.com/api/portrait/analysis/face-analyzer"
+API_URL = "https://www.ailabapi.com/api/portrait/analysis/face-analyzer"
+API_KEY = "2en9VSKfYomuuGLUa6I7DOKFpANWURzOg8pbLISJsvvxZkAFqXsCPEyWEiBtwQlt"
+MAX_SIZE = (2000, 2000)
 
-# 발급받은 API 키
-API_KEY = "YOUR_API_KEY"  # 발급받은 API 키로 대체
+def resize_image(image_path):
+    """
+    이미지 크기를 2000x2000 이하로 조정
+    """
+    try:
+        with Image.open(image_path) as img:
+            if img.width > MAX_SIZE[0] or img.height > MAX_SIZE[1]:
+                print(f"[INFO] Resizing image {image_path} to {MAX_SIZE}")
+                img.thumbnail(MAX_SIZE)
+                img.save(image_path)
+                print(f"[INFO] Image resized and saved as {image_path}")
+            return image_path
+    except Exception as e:
+        print(f"[ERROR] Image resizing failed: {e}")
+        return None
 
 def analyze_face(image_path):
+    """
+    AILabTools API를 호출하여 얼굴 분석을 수행
+    """
     headers = {
         "ailabapi-api-key": API_KEY
     }
 
-    files = {
-        "file": open(image_path, "rb")
+    if not os.path.exists(image_path):
+        return {"error": "File not found"}
+
+    file_size = os.path.getsize(image_path)
+    if file_size == 0:
+        return {"error": "File is empty"}
+
+    # 이미지 리사이즈
+    image_path = resize_image(image_path)
+    if not image_path:
+        return {"error": "Image processing failed"}
+
+    # 요청할 속성만 남김
+    data = {
+        "max_face_num": 1,
+        "need_rotate_detection": 1,
+        "face_attributes_type": "Eye,Nose,Shape,Hair,Skin"
     }
 
     try:
-        response = requests.post(url, headers=headers, files=files)
-        response.raise_for_status()
-        data = response.json()
+        with open(image_path, "rb") as img_file:
+            files = {"image": img_file}
+            response = requests.post(API_URL, headers=headers, files=files, data=data)
 
-        # API 응답 출력
-        print(json.dumps(data, indent=4))
+        # 전체 응답을 출력
+        print("\n--- FULL RESPONSE START ---")
+        print(f"Status Code: {response.status_code}")
+        print(f"Headers: {response.headers}")
+        print(f"Content: {response.content.decode('utf-8')}")
+        print("--- FULL RESPONSE END ---\n")
 
-        # 필요한 정보만 추출
-        if "face_detail_infos" in data and data["face_detail_infos"]:
-            face_info = data["face_detail_infos"][0]["face_detail_attributes_info"]
-            return {
-                "age": face_info["age"],
-                "beauty": face_info["beauty"],
-                "gender": "Male" if face_info["gender"]["type"] == 0 else "Female",
-                "emotion": face_info["emotion"]["type"],
-                "emotion_probability": face_info["emotion"]["probability"]
-            }
-        else:
-            print("얼굴 정보가 인식되지 않았습니다.")
-            return None
+        # 응답이 JSON 형식이 아닐 경우를 대비한 예외 처리
+        try:
+            data = response.json()
+        except ValueError as e:
+            print(f"[ERROR] JSON Decode Error: {e}")
+            return {"error": "Invalid JSON response"}
 
-    except requests.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err}")
+        # 얼굴 데이터가 없는 경우
+        face_info_list = data.get("face_detail_infos", [])
+        if not face_info_list:
+            print("[DEBUG] No face data detected in the image.")
+            print("[DEBUG] Full Response Data:", data)
+            return {"error": "No face data found or analysis failed."}
+
+        return data
+
+    except requests.RequestException as req_err:
+        print(f"[ERROR] Request error: {req_err}")
+        return {"error": str(req_err)}
     except Exception as err:
-        print(f"Other error occurred: {err}")
-
-
-# 테스트 실행
-if __name__ == "__main__":
-    parent1_info = analyze_face("parent1.jpg")
-    parent2_info = analyze_face("parent2.jpg")
-
-    print("\nParent 1 Analysis:", parent1_info)
-    print("\nParent 2 Analysis:", parent2_info)
+        print(f"[ERROR] Unexpected error: {err}")
+        return {"error": str(err)}

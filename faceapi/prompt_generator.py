@@ -9,25 +9,29 @@ def generate_prompt(parent1_features, parent2_features):
     Returns:
         str: 생성된 GPT 프롬프트
     """
-    p1_gender = parent1_features.get("gender", "Unknown")
-    p1_age = parent1_features.get("age", "Unknown")
-    p1_emotion = parent1_features.get("emotion", "Unknown")
-    p1_smile = parent1_features.get("smile", 0)
-    p1_beauty = parent1_features.get("beauty", 0)
 
-    p2_gender = parent2_features.get("gender", "Unknown")
-    p2_age = parent2_features.get("age", "Unknown")
-    p2_emotion = parent2_features.get("emotion", "Unknown")
-    p2_smile = parent2_features.get("smile", 0)
-    p2_beauty = parent2_features.get("beauty", 0)
+    def extract_characteristics(features, label):
+        """특징 문자열 생성 함수"""
+        return (
+            f"{label} - "
+            f"Skin Color: {features.get('skin_color')}, "
+            f"Face Shape: {features.get('face_shape')}, "
+            f"Eye Size: {features.get('eye_size')}, "
+            f"Eyelid Type: {features.get('eyelid_type')}, "
+            f"Nose Shape: {features.get('nose_shape')}, "
+            f"Hair Color: {features.get('hair_color')}"
+        )
 
+    # 부모 특징 구성
+    parent1_desc = extract_characteristics(parent1_features, "Parent 1")
+    parent2_desc = extract_characteristics(parent2_features, "Parent 2")
+
+    # 프롬프트 생성
     prompt = (
-        f"Imagine a child whose parents have the following characteristics:\n"
-        f"Parent 1 - Gender: {p1_gender}, Age: {p1_age}, Emotion: {p1_emotion}, "
-        f"Smile: {p1_smile}, Beauty: {p1_beauty}\n"
-        f"Parent 2 - Gender: {p2_gender}, Age: {p2_age}, Emotion: {p2_emotion}, "
-        f"Smile: {p2_smile}, Beauty: {p2_beauty}\n"
-        f"Generate a description of how the child would look, considering these features."
+        f"Generate a description of a child based on the following parental characteristics:\n\n"
+        f"{parent1_desc}\n\n"
+        f"{parent2_desc}\n\n"
+        f"Based on these characteristics, describe the likely appearance of the child."
     )
 
     return prompt
