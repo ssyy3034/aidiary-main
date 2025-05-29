@@ -3,3 +3,5 @@ requests
 Pillow
 flaREMOVEDcors
 transformers
+openai
+python-dotenv
