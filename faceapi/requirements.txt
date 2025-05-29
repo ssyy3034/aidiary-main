@@ -3,3 +3,5 @@ requests
 Pillow
 flask-cors
 transformers
+openai
+python-dotenv
