@@ -43,13 +43,12 @@ public class AuthService {
                 .role(Role.USER)
                 .build();
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        // 오버플로우 에러 발생해서 회원가입 후 바로 인증하지 않고, 사용자 정보만 반환
         return AuthResponse.builder()
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole().name())
+                .username(savedUser.getUsername())
+                .email(savedUser.getEmail())
+                .role(savedUser.getRole().name())
                 .build();
     }
 
@@ -58,9 +57,10 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
 
-        String token = jwtTokenProvider.createToken(authentication);
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        String token = jwtTokenProvider.createToken(authentication, user.getId());
 
         return AuthResponse.builder()
                 .token(token)
@@ -69,4 +69,4 @@ public class AuthService {
                 .role(user.getRole().name())
                 .build();
     }
-} 
+}
