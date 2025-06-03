@@ -1,0 +1,17 @@
+{
+  "name": "aidiary-main",
+  "version": "1.0.0",
+  "description": "## 프로젝트 개요 Aidiary는 산모의 정서 관리와 가족 유대 형성을 지원하는 AI 기반 일기 서비스입니다. 주요 목표는 감정 기반 일기 작성, AI 조언 제공, 부모의 얼굴과 초음파 정보를 기반으로 한 아이 캐릭터 생성 및 정서적 상호작용을 통해 임신 중 산모의 정서적 안정과 가족 유대 강화를 돕는 것입니다.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.4",
+    "tailwindcss": "^4.1.8"
+  }
+}

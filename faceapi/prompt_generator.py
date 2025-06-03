@@ -24,18 +24,16 @@ def generate_prompt(parent1_features, parent2_features):
         return f"{label}:\n" + "\n".join(characteristics)
 
     prompt = (
-        "Create a photorealistic portrait of an adorable child with these parental features:\n\n"
+        "Create a photorealistic portrait of an adorable child face:\n\n"
         f"{extract_characteristics(parent1_features, 'Parent 1')}\n\n"
         f"{extract_characteristics(parent2_features, 'Parent 2')}\n\n"
-        "Essential requirements:\n"
-        "1. NO BACKGROUND - completely removed/transparent background\n"
-        "2. Generate ONLY the face and head\n"
-        "3. Cute and endearing expression\n"
-        "4. Consider genetic influence percentages for each feature\n"
-        "5. Highly detailed facial features naturally inherited from parents\n\n"
-        "Create a lifelike child's face that combines the parents' features "
-        "according to their genetic influence weights, while maintaining an adorable appearance. "
-        "IMPORTANT: The image must have absolutely no background elements - only the face/head should be visible."
+        "Technical requirements:\n"
+        "1. Alpha channel background (100% transparent)\n"
+        "2. Head and face only, front view\n"
+        "3. Warm, natural smile\n"
+        "4. Photo-realistic skin texture\n"
+        "5. Natural lighting on face\n\n"
+        "Generate image without text, labels, or descriptions. Output face only with transparent background."
     )
 
     return prompt

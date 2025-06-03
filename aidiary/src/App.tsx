@@ -1,17 +1,53 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Box, AppBar, Toolbar, Typography, Button, IconButton } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle as AccountIcon } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle as AccountIcon, ChildCare as ChildCareIcon } from '@mui/icons-material';
 import Login from './components/Login';
 import Register from './components/Register';
 import Diary from './components/Diary';
 import Profile from './components/Profile';
+import CharacterGenerator from './components/CharacterGenerator';
 import axios from 'axios';
 
+interface CharacterData {
+  id?: number;
+  childName: string;
+  childBirthday: string;
+  parent1Features: string;
+  parent2Features: string;
+  prompt: string;
+  gptResponse: string;
+  characterImage: string;
+}
+
+interface AuthState {
+  isAuthenticated: boolean;
+  hasCharacter: boolean;
+  characterData: string | null;
+}
+
+interface CharacterGeneratorProps {
+  onCharacterCreated: (characterData: CharacterData) => Promise<void>;
+  existingCharacter: CharacterData | null;
+}
+
 const AppContent: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authState, setAuthState] = useState<AuthState>({
+    isAuthenticated: !!localStorage.getItem('token'),
+    hasCharacter: !!localStorage.getItem('characterData'),
+    characterData: localStorage.getItem('characterData')
+        ? JSON.parse(localStorage.getItem('characterData')!)
+        : null
+  });
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    setAuthState(prev => ({
+      ...prev,
+      isAuthenticated: !!token
+    }));
+  }, [token]);
 
   const handleLogin = async (username: string, password: string) => {
     try {
@@ -19,11 +55,19 @@ const AppContent: React.FC = () => {
         username,
         password
       });
-      
+
       const { token } = response.data;
       localStorage.setItem('token', token);
       setToken(token);
-      setIsAuthenticated(true);
+
+      const savedCharacterData = localStorage.getItem('characterData');
+      setAuthState({
+        isAuthenticated: true,
+        hasCharacter: !!savedCharacterData,
+        characterData: savedCharacterData ? JSON.parse(savedCharacterData) : null
+      });
+
+      navigate('/'); // 로그인 후 메인 페이지(다이어리)로 이동
     } catch (error) {
       console.error('로그인 실패:', error);
       alert('로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.');
@@ -32,7 +76,7 @@ const AppContent: React.FC = () => {
 
   const handleRegister = async (username: string, password: string, email: string, phone: string) => {
     try {
-      const response = await axios.post('http://localhost:8080/api/v1/auth/signup', {
+      await axios.post('http://localhost:8080/api/v1/auth/signup', {
         username,
         password,
         email,
@@ -43,13 +87,10 @@ const AppContent: React.FC = () => {
     } catch (error: any) {
       console.error('회원가입 실패:', error);
       if (error.response) {
-        // 서버에서 응답이 왔지만 에러인 경우
         alert(error.response.data || '회원가입에 실패했습니다. 다시 시도해주세요.');
       } else if (error.request) {
-        // 요청은 보냈지만 응답이 없는 경우
         alert('서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
       } else {
-        // 요청 설정 중 에러가 발생한 경우
         alert('회원가입 중 오류가 발생했습니다. 다시 시도해주세요.');
       }
     }
@@ -66,6 +107,35 @@ const AppContent: React.FC = () => {
     } catch (error) {
       console.error('프로필 업데이트 실패:', error);
       alert('프로필 업데이트에 실패했습니다.');
+    }
+  };
+
+  const handleCharacterCreated = async (characterData: CharacterData) => {
+    try {
+      const response = await axios.post(
+          'http://localhost:8080/api/child/save',
+          characterData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+      );
+
+      const savedCharacterData = response.data;
+      localStorage.setItem('characterData', JSON.stringify(savedCharacterData));
+
+      setAuthState(prev => ({
+        ...prev,
+        hasCharacter: true,
+        characterData: savedCharacterData
+      }));
+
+      navigate('/diary');
+    } catch (error) {
+      console.error('캐릭터 생성 실패:', error);
+      alert('캐릭터 생성에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -86,90 +156,175 @@ const AppContent: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('characterData');
     setToken(null);
-    setIsAuthenticated(false);
+    setAuthState({
+      isAuthenticated: false,
+      hasCharacter: false,
+      characterData: null
+    });
+    navigate('/');
   };
 
   return (
-    <>
-      {isAuthenticated && (
-        <AppBar position="static">
-          <Toolbar>
-            <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              aria-label="menu"
-              sx={{ mr: 2 }}
+      <>
+        {authState.isAuthenticated && (
+            <AppBar
+                position="fixed"
+                sx={{
+                  backgroundColor: '#fff0e6',
+                  boxShadow: '0 2px 4px rgba(194, 103, 90, 0.1)'
+                }}
             >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              AI 육아 다이어리
-            </Typography>
-            <Button color="inherit" href="/diary">
-              다이어리
-            </Button>
-            <Button color="inherit" href="/profile">
-              <AccountIcon sx={{ mr: 1 }} />
-              프로필
-            </Button>
-            <Button color="inherit" onClick={handleLogout}>
-              로그아웃
-            </Button>
-          </Toolbar>
-        </AppBar>
-      )}
-      <Box sx={{ mt: isAuthenticated ? 8 : 0 }}>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              isAuthenticated ? (
-                <Navigate to="/diary" />
-              ) : (
-                <Login onLogin={handleLogin} />
-              )
-            }
-          />
-          <Route
-            path="/register"
-            element={<Register onRegister={handleRegister} />}
-          />
-          <Route
-            path="/diary"
-            element={
-              isAuthenticated ? (
-                <Diary />
-              ) : (
-                <Navigate to="/" />
-              )
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              isAuthenticated ? (
-                <Profile 
-                  onUpdateProfile={handleUpdateProfile}
-                  onDeleteAccount={handleDeleteAccount}
-                />
-              ) : (
-                <Navigate to="/" />
-              )
-            }
-          />
-        </Routes>
-      </Box>
-    </>
+              <Toolbar>
+                <IconButton
+                    size="large"
+                    edge="start"
+                    sx={{
+                      mr: 2,
+                      color: '#c2675a'
+                    }}
+                    aria-label="menu"
+                >
+                  <MenuIcon />
+                </IconButton>
+
+                <Typography
+                    variant="h6"
+                    component="div"
+                    sx={{
+                      flexGrow: 1,
+                      color: '#c2675a',
+                      fontWeight: 600,
+                      fontSize: '1.4rem',
+                      fontFamily: "'Noto Sans KR', sans-serif"
+                    }}
+                >
+                  AI 육아 다이어리
+                </Typography>
+
+                <Button
+                    onClick={() => navigate('/character')}
+                    startIcon={<ChildCareIcon />}
+                    sx={{
+                      color: '#c2675a',
+                      mx: 1,
+                      '&:hover': {
+                        backgroundColor: 'rgba(194, 103, 90, 0.1)'
+                      }
+                    }}
+                >
+                  캐릭터
+                </Button>
+
+                <Button
+                    onClick={() => navigate('/diary')}
+                    sx={{
+                      color: '#c2675a',
+                      mx: 1,
+                      '&:hover': {
+                        backgroundColor: 'rgba(194, 103, 90, 0.1)'
+                      }
+                    }}
+                >
+                  다이어리
+                </Button>
+
+                <Button
+                    onClick={() => navigate('/profile')}
+                    startIcon={<AccountIcon />}
+                    sx={{
+                      color: '#c2675a',
+                      mx: 1,
+                      '&:hover': {
+                        backgroundColor: 'rgba(194, 103, 90, 0.1)'
+                      }
+                    }}
+                >
+                  프로필
+                </Button>
+
+                <Button
+                    onClick={handleLogout}
+                    sx={{
+                      color: '#c2675a',
+                      ml: 1,
+                      '&:hover': {
+                        backgroundColor: 'rgba(194, 103, 90, 0.1)'
+                      }
+                    }}
+                >
+                  로그아웃
+                </Button>
+              </Toolbar>
+            </AppBar>
+        )}
+
+        {authState.isAuthenticated && <Toolbar />}
+
+        <Box>
+          <Routes>
+            <Route
+                path="/"
+                element={
+                  authState.isAuthenticated ? (
+                      <Diary />
+                  ) : (
+                      <Login onLogin={handleLogin} />
+                  )
+                }
+            />
+            <Route
+                path="/register"
+                element={<Register onRegister={handleRegister} />}
+            />
+            <Route
+                path="/character"
+                element={
+                  authState.isAuthenticated ? (
+                      <CharacterGenerator
+                          onCharacterCreated={handleCharacterCreated}
+                          existingCharacter={authState.characterData}
+                      />
+                  ) : (
+                      <Navigate to="/" />
+                  )
+                }
+            />
+            <Route
+                path="/diary"
+                element={
+                  authState.isAuthenticated ? (
+                      <Diary />
+                  ) : (
+                      <Navigate to="/" />
+                  )
+                }
+            />
+            <Route
+                path="/profile"
+                element={
+                  authState.isAuthenticated ? (
+                      <Profile
+                          onUpdateProfile={handleUpdateProfile}
+                          onDeleteAccount={handleDeleteAccount}
+                      />
+                  ) : (
+                      <Navigate to="/" />
+                  )
+                }
+            />
+          </Routes>
+        </Box>
+      </>
   );
 };
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+      <Router>
+        <AppContent />
+      </Router>
   );
 };
 
