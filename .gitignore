@@ -42,8 +42,7 @@ out/
 ### Environment Variables ###
 /faceapi/.env
 
-### Node.js ###
-/node_modules/
+/aidiary/node_modules/
 /.cache/
 
 ### Large Files ###

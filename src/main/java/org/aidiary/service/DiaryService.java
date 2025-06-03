@@ -16,13 +16,13 @@ public class DiaryService {
     @Autowired
     private DiaryRepository diaryRepository;
 
-    public Diary createDiary(DiaryDTO dto, Long userId) {
+    public Diary createDiary(DiaryDTO dto, Long id) {
         Diary diary = Diary.builder()
                 .title(dto.getTitle())
                 .content(dto.getContent())
                 .emotion(dto.getEmotion())
                 .createdAt(LocalDateTime.now())
-                .userId(userId)
+                .id(id)
                 .build();
         return diaryRepository.save(diary);
     }
