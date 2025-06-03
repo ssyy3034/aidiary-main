@@ -1,0 +1,16 @@
+input::placeholder {
+    color: rgba(194, 103, 90, 0.5);
+}
+
+.primary-button:hover {
+    background-color: #b35a4d !important;
+}
+
+.secondary-button:hover {
+    background-color: rgba(194, 103, 90, 0.2) !important;
+}
+
+input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(194, 103, 90, 0.2);
+}
