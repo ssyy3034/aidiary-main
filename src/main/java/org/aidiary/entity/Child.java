@@ -28,6 +28,12 @@ public class Child {
     @Column(name = "character_image")
     private String characterImage;
 
+    @Column(name = "child_name")
+    private String childName;
+
+    @Column(name = "child_birthday")
+    private String childBirthday;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

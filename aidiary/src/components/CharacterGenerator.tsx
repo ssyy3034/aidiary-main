@@ -16,14 +16,17 @@ interface CharacterData {
 
 interface CharacterGeneratorProps {
     onCharacterCreated: (characterData: CharacterData) => Promise<void>;
-    existingCharacter: string | null;
+    existingCharacter: CharacterData | null; // ✅ 이렇게 고쳐야 맞아
 }
 
+
 const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCreated, existingCharacter }) => {
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<CharacterData | null>(null);
     const [status, setStatus] = useState('');
     const [loading, setLoading] = useState(false);
-    const [generatedImage, setGeneratedImage] = useState<string | null>(existingCharacter || null);
+    const [generatedImage, setGeneratedImage] = useState<string | null>(
+        existingCharacter ? existingCharacter.characterImage : null
+    );
     const [childName, setChildName] = useState('');
     const [childBirthday, setChildBirthday] = useState('');
     const [parent1File, setParent1File] = useState<File | null>(null);
@@ -43,9 +46,10 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
 
     useEffect(() => {
         if (existingCharacter) {
-            setGeneratedImage(existingCharacter);
+            setGeneratedImage(existingCharacter.characterImage); // ✅ 명확하게 캐릭터 이미지만
         }
     }, [existingCharacter]);
+
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, parent: 'parent1' | 'parent2') => {
         if (event.target.files && event.target.files[0]) {

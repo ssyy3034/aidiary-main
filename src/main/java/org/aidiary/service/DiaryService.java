@@ -1,29 +1,38 @@
-// DiaryService.java
 package org.aidiary.service;
 
-import org.aidiary.dto.DiaryDTO;
-
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.aidiary.dto.CreateDiaryDTO;
 import org.aidiary.entity.Diary;
+import org.aidiary.entity.User;
 import org.aidiary.repository.DiaryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.aidiary.repository.UserRepository;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class DiaryService {
 
-    @Autowired
-    private DiaryRepository diaryRepository;
+    private final DiaryRepository diaryRepository;
+    private final UserRepository userRepository;
 
-    public Diary createDiary(DiaryDTO dto, Long id) {
+    @Transactional
+    public Diary createDiary(CreateDiaryDTO dto, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
         Diary diary = Diary.builder()
                 .title(dto.getTitle())
                 .content(dto.getContent())
                 .emotion(dto.getEmotion())
                 .createdAt(LocalDateTime.now())
-                .id(id)
+                .user(user) // ✅ user 엔티티로 직접 설정
                 .build();
+
         return diaryRepository.save(diary);
     }
 
@@ -31,19 +40,25 @@ public class DiaryService {
         return diaryRepository.findById(id);
     }
 
-    public Diary updateDiary(Long id, DiaryDTO dto) {
-        Optional<Diary> existingDiary = diaryRepository.findById(id);
-        if (existingDiary.isPresent()) {
-            Diary diary = existingDiary.get();
-            diary.setTitle(dto.getTitle());
-            diary.setContent(dto.getContent());
-            diary.setEmotion(dto.getEmotion());
-            return diaryRepository.save(diary);
-        }
-        throw new IllegalArgumentException("Diary not found");
+    @Transactional
+    public Diary updateDiary(Long id, CreateDiaryDTO dto) {
+        Diary diary = diaryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("일기를 찾을 수 없습니다."));
+        diary.setTitle(dto.getTitle());
+        diary.setContent(dto.getContent());
+        diary.setEmotion(dto.getEmotion());
+        return diary; // JPA의 dirty checking
     }
 
+    @Transactional
     public void deleteDiary(Long id) {
+        if (!diaryRepository.existsById(id)) {
+            throw new IllegalArgumentException("삭제할 일기가 존재하지 않습니다.");
+        }
         diaryRepository.deleteById(id);
+    }
+
+    public List<Diary> getAllDiaries() {
+        return diaryRepository.findAll();
     }
 }

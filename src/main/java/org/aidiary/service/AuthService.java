@@ -46,10 +46,13 @@ public class AuthService {
         User savedUser = userRepository.save(user);
 
         return AuthResponse.builder()
+                .id(savedUser.getId())
+                .token(jwtTokenProvider.createToken(savedUser.getId(), savedUser.getRole().name()))
                 .username(savedUser.getUsername())
                 .email(savedUser.getEmail())
                 .role(savedUser.getRole().name())
                 .build();
+
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -63,6 +66,7 @@ public class AuthService {
         String token = jwtTokenProvider.createToken(authentication, user.getId());
 
         return AuthResponse.builder()
+                .id(user.getId())  // ✅ 추가
                 .token(token)
                 .username(user.getUsername())
                 .email(user.getEmail())
