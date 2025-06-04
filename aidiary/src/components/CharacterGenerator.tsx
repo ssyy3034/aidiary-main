@@ -3,6 +3,8 @@ import { Box, TextField, Button, Paper, Typography, CircularProgress } from '@mu
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import axios from 'axios';
 
+const faceApiUrl = process.env.REACT_APP_FACE_API_URL || 'http://localhost:5001';
+
 interface CharacterData {
     id?: number;
     childName: string;
@@ -75,7 +77,7 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
         formData.append('parent2', parent2File);
 
         try {
-            const response = await axios.post('http://localhost:5001/analyze', formData, {
+            const response = await axios.post(`${faceApiUrl}/analyze`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 responseType: 'blob'
             });

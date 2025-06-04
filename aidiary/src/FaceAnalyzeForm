@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
+const faceApiUrl = process.env.REACT_APP_FACE_API_URL || 'http://localhost:5001';
+
 function FaceAnalyzeForm() {
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState('');
@@ -15,7 +17,7 @@ function FaceAnalyzeForm() {
     formData.append('parent2', e.target.parent2.files[0]);
 
     try {
-      const res = await axios.post('http://localhost:5001/analyze', formData, {
+      const res = await axios.post(`${faceApiUrl}/analyze`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setResult(res.data);
