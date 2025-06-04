@@ -4,11 +4,10 @@ import axios from 'axios';
 import Login from './components/Login';
 import Register from './components/Register';
 import Diary from './components/Diary';
-import Profile from './components/Profile';
+import Profile, { UserProfile } from './components/Profile';
 import CharacterGenerator from './components/CharacterGenerator';
 import { AppBar, Toolbar, Typography, Button, IconButton, Box } from '@mui/material';
 import { Menu as MenuIcon, AccountCircle as AccountIcon, ChildCare as ChildCareIcon } from '@mui/icons-material';
-import { UserProfile } from './components/Profile';
 
 interface CharacterData {
   id?: number;
@@ -29,23 +28,44 @@ export interface AuthState {
 }
 
 const AppContent: React.FC = () => {
+  const loadUserInfoFromStorage = (): UserProfile | null => {
+    const raw = localStorage.getItem('userInfo');
+    if (!raw) return null;
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (
+          parsed &&
+          typeof parsed.id === 'number' && !isNaN(parsed.id) &&
+          typeof parsed.username === 'string' &&
+          typeof parsed.email === 'string'
+      ) {
+        return parsed as UserProfile;
+      } else {
+        console.warn('userInfo 형식이 잘못됨:', parsed);
+        return null;
+      }
+    } catch (e) {
+      console.error('userInfo 파싱 오류:', e);
+      return null;
+    }
+  };
+
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: !!localStorage.getItem('token'),
     hasCharacter: !!localStorage.getItem('characterData'),
     characterData: localStorage.getItem('characterData')
         ? JSON.parse(localStorage.getItem('characterData')!) as CharacterData
         : null,
-    userInfo: localStorage.getItem('userInfo')
-        ? JSON.parse(localStorage.getItem('userInfo')!) as UserProfile
-        : null,
+    userInfo: loadUserInfoFromStorage(),
   });
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserInfo = async () => {
-      if (!authState.isAuthenticated) return;
+    if (!authState.isAuthenticated || authState.userInfo) return;
 
+    const fetchUserInfo = async () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) return;
@@ -56,26 +76,40 @@ const AppContent: React.FC = () => {
           },
         });
 
-        localStorage.setItem('userInfo', JSON.stringify(response.data));
+        const user: UserProfile = {
+          id: response.data.id,
+          username: response.data.username,
+          email: response.data.email,
+          phone: response.data.phone || '',
+          child: response.data.child || null,
+        };
 
-        setAuthState((prev) => ({
-          ...prev,
-          userInfo: response.data,
-        }));
+        localStorage.setItem('userInfo', JSON.stringify(user));
+        setAuthState((prev) => ({ ...prev, userInfo: user }));
       } catch (error) {
         console.error('사용자 정보 로드 실패:', error);
       }
     };
 
     fetchUserInfo();
-  }, [authState.isAuthenticated]);
+  }, [authState.isAuthenticated, authState.userInfo]);
 
   const handleLogin = async (username: string, password: string) => {
     try {
       const response = await axios.post('http://localhost:8080/api/auth/login', { username, password });
-      const { token, username: u, email, role, id, child } = response.data;
+      const { token, username: u, email, id, child } = response.data;
+      console.log('로그인 응답 데이터:', response.data);
+
+      const user: UserProfile = {
+        id,
+        username: u,
+        email,
+        phone: '',
+        child: child ?? null,
+      };
+
       localStorage.setItem('token', token);
-      localStorage.setItem('userInfo', JSON.stringify({ username: u, email, role, phone: '', child, id }));
+      localStorage.setItem('userInfo', JSON.stringify(user));
 
       setAuthState({
         isAuthenticated: true,
@@ -83,7 +117,7 @@ const AppContent: React.FC = () => {
         characterData: localStorage.getItem('characterData')
             ? JSON.parse(localStorage.getItem('characterData')!) as CharacterData
             : null,
-        userInfo: { username: u, email, phone: '', child, id },
+        userInfo: user,
       });
 
       navigate('/');
@@ -96,7 +130,7 @@ const AppContent: React.FC = () => {
     try {
       await axios.post('http://localhost:8080/api/auth/signup', { username, password, email, phone });
       alert('회원가입 완료');
-      navigate('/');
+      await handleLogin(username, password);
     } catch (error) {
       alert('회원가입 실패');
     }
@@ -112,11 +146,7 @@ const AppContent: React.FC = () => {
       });
 
       localStorage.setItem('userInfo', JSON.stringify(profile));
-
-      setAuthState((prev) => ({
-        ...prev,
-        userInfo: profile,
-      }));
+      setAuthState((prev) => ({ ...prev, userInfo: profile }));
 
       alert('프로필이 업데이트되었습니다.');
     } catch (error) {
@@ -191,59 +221,15 @@ const AppContent: React.FC = () => {
 
         {authState.isAuthenticated && <Toolbar />}
 
-          <Box>
-            <Routes>
-              <Route
-                  path="/"
-                  element={
-                    authState.isAuthenticated
-                        ? <Diary authState={authState} />
-                        : <Login onLogin={handleLogin} />
-                  }
-              />
-              <Route
-                  path="/register"
-                  element={<Register onRegister={handleRegister} />}
-              />
-              <Route
-                  path="/character"
-                  element={
-                    authState.isAuthenticated
-                        ? <CharacterGenerator
-                            onCharacterCreated={handleCharacterCreated}
-                            existingCharacter={authState.characterData}
-                        />
-                        : <Navigate to="/" />
-                  }
-              />
-              <Route
-                  path="/diary"
-                  element={
-                    authState.isAuthenticated
-                        ? <Diary authState={authState} />
-                        : <Navigate to="/" />
-                  }
-              />
-              <Route
-                  path="/profile"
-                  element={
-                    authState.isAuthenticated ? (
-                        authState.userInfo ? (
-                            <Profile
-                                userInfo={authState.userInfo}
-                                onUpdateProfile={handleUpdateProfile}
-                                onDeleteAccount={handleDeleteAccount}
-                            />
-                        ) : (
-                            <Typography sx={{ mt: 10, textAlign: 'center' }}>사용자 정보를 불러오는 중입니다...</Typography>
-                        )
-                    ) : (
-                        <Navigate to="/" />
-                    )
-                  }
-              />
-            </Routes>
-          </Box>
+        <Box>
+          <Routes>
+            <Route path="/" element={authState.isAuthenticated ? <Diary authState={authState} /> : <Login onLogin={handleLogin} />} />
+            <Route path="/register" element={<Register onRegister={handleRegister} />} />
+            <Route path="/character" element={authState.isAuthenticated ? <CharacterGenerator onCharacterCreated={handleCharacterCreated} existingCharacter={authState.characterData} /> : <Navigate to="/" />} />
+            <Route path="/diary" element={authState.isAuthenticated ? <Diary authState={authState} /> : <Navigate to="/" />} />
+            <Route path="/profile" element={authState.isAuthenticated ? authState.userInfo ? <Profile userInfo={authState.userInfo} onUpdateProfile={handleUpdateProfile} onDeleteAccount={handleDeleteAccount} /> : <Typography sx={{ mt: 10, textAlign: 'center' }}>사용자 정보를 불러오는 중입니다...</Typography> : <Navigate to="/" />} />
+          </Routes>
+        </Box>
       </>
   );
 };

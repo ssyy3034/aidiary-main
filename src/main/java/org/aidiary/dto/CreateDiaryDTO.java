@@ -10,5 +10,4 @@ public class CreateDiaryDTO {
     private String title;
     private String content;
     private String emotion;
-    // 🔥 userId 제거
 }
