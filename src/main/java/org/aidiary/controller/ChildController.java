@@ -1,7 +1,7 @@
 package org.aidiary.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.aidiary.dto.ChildDto;
+import org.aidiary.dto.ChildDTO;
 import org.aidiary.service.ChildService;
 import org.aidiary.security.JwtTokenProvider;
 import org.springframework.http.HttpStatus;
@@ -17,8 +17,8 @@ public class ChildController {
     private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/save")
-    public ResponseEntity<ChildDto> saveChild(
-            @RequestBody ChildDto childDto,
+    public ResponseEntity<ChildDTO> saveChild(
+            @RequestBody ChildDTO childDto,
             @RequestHeader(value = "Authorization", required = true) String token) {
         try {
             if (token == null || !token.startsWith("Bearer ")) {
@@ -39,7 +39,7 @@ public class ChildController {
             }
 
             childDto.setId(id);
-            ChildDto savedChild = childService.saveChildData(childDto);
+            ChildDTO savedChild = childService.saveChildData(childDto);
             return ResponseEntity.ok(savedChild);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -48,7 +48,7 @@ public class ChildController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ChildDto> getChildById(@PathVariable Long id) {
+    public ResponseEntity<ChildDTO> getChildById(@PathVariable Long id) {
         if (id == null) {
             return ResponseEntity.badRequest().build();
         }

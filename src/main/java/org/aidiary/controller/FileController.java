@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/v1/file")
+@RequestMapping("/api/file")
 @RequiredArgsConstructor
 @Tag(name = "File API", description = "파일 업로드 및 삭제 API")
 public class FileController {
