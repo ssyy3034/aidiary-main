@@ -8,7 +8,7 @@ import jakarta.validation.Valid;
 import org.aidiary.dto.UpdatePasswordDTO;
 import org.aidiary.entity.User;
 import org.aidiary.service.UserService;
-import org.aidiary.util.JwtUtil;
+import org.aidiary.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +24,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public class UserController {
 
     private final UserService userService;
-    private final JwtUtil jwtUtil;
+    private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
     @Operation(summary = "사용자 정보 조회", description = "토큰을 이용하여 사용자 정보를 조회합니다.")
@@ -44,13 +44,13 @@ public class UserController {
             }
 
             String token = authHeader.substring(7);
-            String email = jwtUtil.extractEmail(token);
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
 
-            if (email == null || email.isEmpty()) {
+            if (userId == null) {
                 return ResponseEntity.status(401).body("Invalid or expired token");
             }
 
-            User user = userService.findByEmail(email);
+            User user = userService.findById(userId);
             if (user == null) {
                 return ResponseEntity.status(404).body("User not found");
             }
@@ -81,9 +81,9 @@ public class UserController {
             }
 
             String token = authHeader.substring(7);
-            String email = jwtUtil.extractEmail(token);
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
 
-            User user = userService.findByEmail(email);
+            User user = userService.findById(userId);
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("사용자를 찾을 수 없습니다.");
             }
@@ -114,9 +114,9 @@ public class UserController {
                 return ResponseEntity.status(400).body("유효하지 않은 인증 헤더입니다.");
             }
             String token = authHeader.substring(7);
-            String email = jwtUtil.extractEmail(token);
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
 
-            userService.deleteUser(email);
+            userService.deleteUserById(userId);
             return ResponseEntity.ok("사용자 계정이 성공적으로 삭제되었습니다.");
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.status(404).body("사용자를 찾을 수 없습니다.");
