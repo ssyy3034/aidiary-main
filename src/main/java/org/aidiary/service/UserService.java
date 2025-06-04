@@ -10,28 +10,27 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger; // 추가
-import org.slf4j.LoggerFactory; // 추가
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
-
+    
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
-
     @Transactional
     public void updateProfile(User user, UpdateProfileDTO dto) {
         user.setPhone(dto.getPhone());
-
+        
         if (dto.getChild() != null) {
             ChildDTO childDto = dto.getChild();
             List<Child> children = user.getChildren();
-
+            
             if (children != null && !children.isEmpty()) {
                 // 기존 자녀 수정
                 Child child = children.get(0);
@@ -44,7 +43,7 @@ public class UserService {
                 user.getChildren().add(newChild);
             }
         }
-
+        
         userRepository.save(user);
     }
 
@@ -56,26 +55,22 @@ public class UserService {
         child.setCharacterImage(dto.getCharacterImage());
     }
 
-
-
     public User findByUsername(String userName) {
-        logger.info("이메일로 사용자 찾기: {}", userName); // 로그 추가
+        logger.info("사용자명으로 사용자 찾기: {}", userName);
         try {
             User user = userRepository.findByUsername(userName).orElse(null);
-            if(user != null) {
-                logger.info("이메일로 사용자 찾기 성공: {}", userName);
+            if (user != null) {
+                logger.info("사용자명으로 사용자 찾기 성공: {}", userName);
                 return user;
             } else {
-                logger.warn("이메일로 사용자 찾기 실패: {}", userName);
+                logger.warn("사용자명으로 사용자 찾기 실패: {}", userName);
                 return null;
             }
-
         } catch (Exception e) {
-            logger.error("이메일로 사용자 찾기 중 오류 발생: {}", e.getMessage()); // 로그 추가
+            logger.error("사용자명으로 사용자 찾기 중 오류 발생: {}", e.getMessage());
             return null;
         }
     }
-
 
     @Transactional
     public void updatePassword(User user, String newPassword) {
@@ -83,13 +78,15 @@ public class UserService {
         userRepository.save(user);
     }
 
-
-
-
     @Transactional
     public void deleteUser(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
         userRepository.delete(user);
+    }
+
+    @Transactional
+    public void deleteUserById(Long id) {
+        userRepository.deleteById(id);
     }
 }

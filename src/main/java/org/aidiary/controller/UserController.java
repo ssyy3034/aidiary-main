@@ -109,7 +109,12 @@ public class UserController {
             String token = authHeader.substring(7);
             String email = jwtTokenProvider.getAuthentication(token).getName();
 
-            userService.deleteUser(email);
+            User user = userService.findByUsername(email);
+            if (user == null) {
+                throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
+            }
+
+            userService.deleteUserById(user.getId());
             return ResponseEntity.ok("사용자 계정이 성공적으로 삭제되었습니다.");
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.status(404).body("사용자를 찾을 수 없습니다.");
