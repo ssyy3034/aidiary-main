@@ -7,7 +7,7 @@ import Register from './components/Register';
 import Diary from './components/Diary';
 import Profile from './components/Profile';
 import CharacterGenerator from './components/CharacterGenerator';
-import axios from 'axios';
+import api from './api';
 
 interface CharacterData {
   id?: number;
@@ -51,7 +51,7 @@ const AppContent: React.FC = () => {
 
   const handleLogin = async (username: string, password: string) => {
     try {
-      const response = await axios.post('http://localhost:8080/api/v1/auth/login', {
+      const response = await api.post('/api/v1/auth/login', {
         username,
         password
       });
@@ -76,7 +76,7 @@ const AppContent: React.FC = () => {
 
   const handleRegister = async (username: string, password: string, email: string, phone: string) => {
     try {
-      await axios.post('http://localhost:8080/api/v1/auth/signup', {
+      await api.post('/api/v1/auth/signup', {
         username,
         password,
         email,
@@ -98,7 +98,7 @@ const AppContent: React.FC = () => {
 
   const handleUpdateProfile = async (profile: any) => {
     try {
-      await axios.put('http://localhost:8080/api/v1/user/profile', profile, {
+      await api.put('/api/v1/user/profile', profile, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -112,8 +112,8 @@ const AppContent: React.FC = () => {
 
   const handleCharacterCreated = async (characterData: CharacterData) => {
     try {
-      const response = await axios.post(
-          'http://localhost:8080/api/child/save',
+      const response = await api.post(
+          '/api/child/save',
           characterData,
           {
             headers: {
@@ -141,7 +141,7 @@ const AppContent: React.FC = () => {
 
   const handleDeleteAccount = async () => {
     try {
-      await axios.delete('http://localhost:8080/api/v1/user', {
+      await api.delete('/api/v1/user', {
         headers: {
           Authorization: `Bearer ${token}`
         }
