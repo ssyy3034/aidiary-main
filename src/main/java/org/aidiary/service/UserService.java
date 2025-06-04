@@ -3,7 +3,6 @@ package org.aidiary.service;
 import jakarta.transaction.Transactional;
 import org.aidiary.dto.UserDTO;
 import org.aidiary.entity.User;
-import org.aidiary.util.JwtUtil;
 import org.aidiary.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,7 +18,6 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil; // JwtUtil 인스턴스 주입
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     @Transactional
@@ -87,22 +85,16 @@ public class UserService {
             return null;
         }
     }
-    public User findByEmailFromToken(String token) {
+
+    public User findById(Long id) {
+        logger.info("ID로 사용자 찾기: {}", id);
         try {
-            // JwtUtil 인스턴스를 사용하여 extractEmail 호출
-            String email = jwtUtil.extractEmail(token);
-
-            if (email == null) {
-                throw new IllegalArgumentException("Invalid token");
-            }
-
-            return findByEmail(email);
+            return userRepository.findById(id).orElse(null);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to extract email from token: " + e.getMessage(), e);
+            logger.error("ID로 사용자 찾기 중 오류 발생: {}", e.getMessage());
+            return null;
         }
     }
-
-
     @Transactional
     public void updatePassword(User user, String newPassword) {
         user.setPassword(passwordEncoder.encode(newPassword));
@@ -115,5 +107,10 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
         userRepository.delete(user);
+    }
+
+    @Transactional
+    public void deleteUserById(Long id) {
+        userRepository.deleteById(id);
     }
 }
