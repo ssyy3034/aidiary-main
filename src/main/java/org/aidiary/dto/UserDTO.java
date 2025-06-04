@@ -16,4 +16,5 @@ public class UserDTO {
 
     @NotBlank(message = "Name is mandatory")
     private String name;
+
 }
