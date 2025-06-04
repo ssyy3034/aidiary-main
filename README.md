@@ -49,6 +49,18 @@ Aidiary/
 1. Docker Compose로 서버 실행
 2. Postman으로 API 테스트
 
+## 환경 변수 설정
+애플리케이션은 데이터베이스 접속 정보를 환경 변수에서 읽어옵니다. 루트
+경로에 `.env` 파일을 생성하여 다음 값을 지정할 수 있습니다.
+
+```
+DB_URL=jdbc:mariadb://localhost:3306/aidiary
+DB_USERNAME=root
+DB_PASSWORD=root
+```
+
+값을 지정하지 않으면 위의 기본값을 사용합니다.
+
 ## 개발 일정
 - 1~2주차: 요구사항 분석 및 회원가입/로그인 구현
 - 3~4주차: 감정 분석 일기 작성 및 캐릭터 생성
