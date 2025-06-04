@@ -66,13 +66,23 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
   };
 
   useEffect(() => {
-    fetchEntries();
-  }, []);
+    console.log('authState 내부 정보:', authState);
+    console.log('authState.userInfo:', authState.userInfo);
+    console.log('authState.userInfo.id:', authState.userInfo?.id);
+  }, [authState]);
+  if (!authState?.userInfo?.id) {
+    return <Typography>로그인 정보를 불러오는 중입니다...</Typography>;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEntry.trim()) return;
     setIsSubmitting(true);
+    console.log('요청 내용:', {
+      content: newEntry,
+      userId: authState.userInfo?.id,
+    });
+
 
     try {
       const userId = authState?.userInfo?.id;

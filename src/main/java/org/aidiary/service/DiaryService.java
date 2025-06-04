@@ -3,6 +3,7 @@ package org.aidiary.service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.aidiary.dto.CreateDiaryDTO;
+import org.aidiary.dto.DiaryResponseDTO;
 import org.aidiary.entity.Diary;
 import org.aidiary.entity.User;
 import org.aidiary.repository.DiaryRepository;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,14 +32,22 @@ public class DiaryService {
                 .content(dto.getContent())
                 .emotion(dto.getEmotion())
                 .createdAt(LocalDateTime.now())
-                .user(user) // ✅ user 엔티티로 직접 설정
+                .user(user)
                 .build();
 
         return diaryRepository.save(diary);
     }
 
-    public Optional<Diary> getDiary(Long id) {
-        return diaryRepository.findById(id);
+    public Optional<DiaryResponseDTO> getDiary(Long id) {
+        return diaryRepository.findById(id)
+                .map(DiaryResponseDTO::fromEntity);
+    }
+
+    public List<DiaryResponseDTO> getAllDiaries() {
+        return diaryRepository.findAll().stream()
+                .map(DiaryResponseDTO::fromEntity)
+                .distinct() // 중복 제거
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -47,7 +57,7 @@ public class DiaryService {
         diary.setTitle(dto.getTitle());
         diary.setContent(dto.getContent());
         diary.setEmotion(dto.getEmotion());
-        return diary; // JPA의 dirty checking
+        return diary;
     }
 
     @Transactional
@@ -56,9 +66,5 @@ public class DiaryService {
             throw new IllegalArgumentException("삭제할 일기가 존재하지 않습니다.");
         }
         diaryRepository.deleteById(id);
-    }
-
-    public List<Diary> getAllDiaries() {
-        return diaryRepository.findAll();
     }
 }

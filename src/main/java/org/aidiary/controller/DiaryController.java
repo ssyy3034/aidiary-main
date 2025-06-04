@@ -2,6 +2,7 @@ package org.aidiary.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.aidiary.dto.CreateDiaryDTO;
+import org.aidiary.dto.DiaryResponseDTO;
 import org.aidiary.entity.Diary;
 import org.aidiary.entity.User;
 import org.aidiary.service.DiaryService;
@@ -19,8 +20,7 @@ public class DiaryController {
     private final DiaryService diaryService;
 
     @GetMapping
-    public List<Diary> getAllDiaries(@AuthenticationPrincipal User user) {
-        // TODO: 유저별 일기만 조회하려면 diaryService.getUserDiaries(user.getId()) 도입
+    public List<DiaryResponseDTO> getAllDiaries(@AuthenticationPrincipal User user) {
         return diaryService.getAllDiaries();
     }
 
@@ -30,12 +30,12 @@ public class DiaryController {
         return diaryService.createDiary(dto, user.getId()); // userId를 서버에서 추출
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Diary> getDiary(@PathVariable Long id) {
-        return diaryService.getDiary(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+//    @GetMapping("/{id}")
+//    public ResponseEntity<DiaryResponseDTO> getDiary(@PathVariable Long id) {
+//        return diaryService.getDiary(id)
+//                .map(ResponseEntity::ok)
+//                .orElse(ResponseEntity.notFound().build());
+//    }
 
     @PutMapping("/{id}")
     public Diary updateDiary(@PathVariable Long id,
