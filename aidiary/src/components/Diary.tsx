@@ -83,7 +83,6 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
       userId: authState.userInfo?.id,
     });
 
-
     try {
       const userId = authState?.userInfo?.id;
       if (!userId) throw new Error('로그인 정보가 없습니다.');
@@ -138,9 +137,13 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
     }
   };
 
+  // 색상 설정
+  const mainColor = '#fff0e6';
+  const subColor = '#c2675a';
+
   return (
-      <Box sx={{ p: 3, backgroundColor: '#fafafa', minHeight: '100vh' }}>
-        <Typography variant="h4" sx={{ textAlign: 'center', mb: 4, color: '#2c3e50', fontWeight: 'bold' }}>
+      <Box sx={{ p: 3, backgroundColor: mainColor, minHeight: '100vh' }}>
+        <Typography variant="h4" sx={{ textAlign: 'center', mb: 4, color: subColor, fontWeight: 'bold' }}>
           우리 아이의 성장일기
         </Typography>
 
@@ -155,7 +158,7 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
                     placeholder="오늘 우리 아이는 어떤 하루를 보냈나요?"
                     value={newEntry}
                     onChange={(e) => setNewEntry(e.target.value)}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, borderColor: subColor } }}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -166,7 +169,7 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
                     endIcon={<SendIcon />}
                     disabled={isSubmitting}
                     fullWidth
-                    sx={{ py: 1.5, borderRadius: 2 }}
+                    sx={{ py: 1.5, borderRadius: 2, backgroundColor: subColor }}
                 >
                   기록하기
                 </Button>
@@ -185,15 +188,15 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
                       <Typography color="textSecondary">{entry.date}</Typography>
                     </Box>
                     <Box>
-                      <IconButton onClick={() => setEditingEntry(entry)}><EditIcon /></IconButton>
+                      <IconButton onClick={() => setEditingEntry(entry)}><EditIcon sx={{ color: subColor }} /></IconButton>
                       <IconButton color="error" onClick={() => { setSelectedEntry(entry); setShowDeleteConfirm(true); }}>
-                        <DeleteIcon />
+                        <DeleteIcon sx={{ color: subColor }} />
                       </IconButton>
                     </Box>
                   </Box>
                   <Typography variant="body1" paragraph sx={{ mb: 3 }}>{entry.content}</Typography>
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    <Chip icon={getEmotionIcon(entry.emotion)} label={entry.emotion} />
+                    <Chip icon={getEmotionIcon(entry.emotion)} label={entry.emotion} sx={{ backgroundColor: subColor, color: '#fff' }} />
                   </Box>
                 </CardContent>
               </Card>

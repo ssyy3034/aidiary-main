@@ -26,7 +26,7 @@ interface ChildProfile {
 }
 
 export interface UserProfile {
-    id: number; // ✅ 추가
+    id: number;
     username: string;
     email: string;
     phone: string;
@@ -38,7 +38,6 @@ interface ProfileProps {
     onUpdateProfile: (profile: UserProfile) => void;
     onDeleteAccount: () => void;
 }
-
 
 const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAccount }) => {
     const defaultChild: ChildProfile = { childName: '', childBirthday: '' };
@@ -56,6 +55,9 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
     const [isEditing, setIsEditing] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+    const mainColor = '#fff0e6';
+    const subColor = '#c2675a';
+
     const handleEdit = () => {
         setEditedProfile(profile);
         setIsEditing(true);
@@ -72,22 +74,19 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
         onDeleteAccount();
     };
 
-    // (이하 나머지 JSX는 변경 없음)
-
-
     return (
         <Box sx={{
             p: 3,
             maxWidth: 800,
             mx: 'auto',
-            backgroundColor: '#fafafa',
+            backgroundColor: mainColor,
             minHeight: '100vh'
         }}>
             <Typography variant="h4"
                         sx={{
                             textAlign: 'center',
                             mb: 4,
-                            color: '#2c3e50',
+                            color: subColor,
                             fontWeight: 'bold'
                         }}>
                 프로필 관리
@@ -98,7 +97,8 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                        p: 4,
                        borderRadius: 2,
                        backgroundColor: '#ffffff',
-                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                       border: `1px solid ${subColor}`,
                    }}>
                 <Box sx={{
                     display: 'flex',
@@ -109,7 +109,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                         sx={{
                             width: 80,
                             height: 80,
-                            bgcolor: '#3498db',
+                            bgcolor: subColor,
                             mr: 3
                         }}
                     >
@@ -140,11 +140,11 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                                     onClick={handleEdit}
                                     sx={{
                                         mr: 2,
-                                        borderColor: '#3498db',
-                                        color: '#3498db',
+                                        borderColor: subColor,
+                                        color: subColor,
                                         '&:hover': {
                                             borderColor: '#2980b9',
-                                            backgroundColor: 'rgba(52, 152, 219, 0.1)'
+                                            backgroundColor: 'rgba(194, 103, 90, 0.1)'
                                         }
                                     }}
                                 >
@@ -177,7 +177,6 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                                 { label: '이메일', value: profile.email },
                                 { label: '전화번호', value: profile.phone },
                                 { label: '자녀 이름', value: profile.child.childName },
-                                { label: '자녀 생년월일', value: profile.child.childBirthday }
                             ].map((item, index) => (
                                 <Box key={index} sx={{
                                     display: 'flex',
@@ -200,7 +199,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                     </Box>
                 ) : (
                     <Box component="form" sx={{ '& .MuiTextField-root': { mb: 3 } }}>
-                        <Typography variant="h6" sx={{ mb: 3, color: '#2c3e50' }}>
+                        <Typography variant="h6" sx={{ mb: 3, color: subColor }}>
                             정보 수정
                         </Typography>
 
@@ -210,6 +209,19 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                             type="email"
                             value={editedProfile.email}
                             onChange={(e) => setEditedProfile({ ...editedProfile, email: e.target.value })}
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '16px',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                    '& fieldset': { borderColor: subColor },
+                                    '&:hover fieldset': { borderColor: subColor },
+                                    '&.Mui-focused fieldset': { borderColor: subColor }
+                                },
+                                '& .MuiInputLabel-root': {
+                                    color: subColor,
+                                    '&.Mui-focused': { color: subColor }
+                                }
+                            }}
                         />
 
                         <TextField
@@ -218,6 +230,19 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                             type="tel"
                             value={editedProfile.phone}
                             onChange={(e) => setEditedProfile({ ...editedProfile, phone: e.target.value })}
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '16px',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                    '& fieldset': { borderColor: subColor },
+                                    '&:hover fieldset': { borderColor: subColor },
+                                    '&.Mui-focused fieldset': { borderColor: subColor }
+                                },
+                                '& .MuiInputLabel-root': {
+                                    color: subColor,
+                                    '&.Mui-focused': { color: subColor }
+                                }
+                            }}
                         />
 
                         <TextField
@@ -231,6 +256,19 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                                     child: { ...editedProfile.child, childName: e.target.value }
                                 })
                             }
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '16px',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                    '& fieldset': { borderColor: subColor },
+                                    '&:hover fieldset': { borderColor: subColor },
+                                    '&.Mui-focused fieldset': { borderColor: subColor }
+                                },
+                                '& .MuiInputLabel-root': {
+                                    color: subColor,
+                                    '&.Mui-focused': { color: subColor }
+                                }
+                            }}
                         />
 
                         <TextField
@@ -245,6 +283,19 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                                     child: { ...editedProfile.child, childBirthday: e.target.value }
                                 })
                             }
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '16px',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                    '& fieldset': { borderColor: subColor },
+                                    '&:hover fieldset': { borderColor: subColor },
+                                    '&.Mui-focused fieldset': { borderColor: subColor }
+                                },
+                                '& .MuiInputLabel-root': {
+                                    color: subColor,
+                                    '&.Mui-focused': { color: subColor }
+                                }
+                            }}
                         />
 
                         <Box sx={{
@@ -273,9 +324,9 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                                 startIcon={<SaveIcon />}
                                 onClick={handleSave}
                                 sx={{
-                                    backgroundColor: '#2c3e50',
+                                    backgroundColor: subColor,
                                     '&:hover': {
-                                        backgroundColor: '#34495e'
+                                        backgroundColor: '#b35a4d'
                                     }
                                 }}
                             >

@@ -24,16 +24,21 @@ def generate_prompt(parent1_features, parent2_features):
         return f"{label}:\n" + "\n".join(characteristics)
 
     prompt = (
-        "Create a photorealistic portrait of an adorable child face:\n\n"
-        f"{extract_characteristics(parent1_features, 'Parent 1')}\n\n"
+        "Generate a centered, photorealistic portrait of an adorable child, showing only the head and face.\n\n"
+        "Visual style and facial features should subtly reflect:\n"
+        f"{extract_characteristics(parent1_features, 'Parent 1')}\n"
         f"{extract_characteristics(parent2_features, 'Parent 2')}\n\n"
-        "Technical requirements:\n"
-        "1. Alpha channel background (100% transparent)\n"
-        "2. Head and face only, front view\n"
-        "3. Warm, natural smile\n"
-        "4. Photo-realistic skin texture\n"
-        "5. Natural lighting on face\n\n"
-        "Generate image without text, labels, or descriptions. Output face only with transparent background."
+        "Strict technical constraints:\n"
+        "1. Fully transparent background (alpha channel)\n"
+        "2. Face and head only, centered and front-facing\n"
+        "3. No body, text, objects, background elements, or clothing\n"
+        "4. Cute and warm expression with natural smile\n"
+        "5. Smooth, soft lighting with realistic skin tone and texture\n\n"
+        "Important:\n"
+        "- Do not include any text, watermark, symbols, or accessories\n"
+        "- Emphasize the child's face as the sole visual focus\n"
+        "- Keep the image clean, minimal, and suitable for avatar use"
     )
+
 
     return prompt

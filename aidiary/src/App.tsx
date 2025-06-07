@@ -5,9 +5,11 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Diary from './components/Diary';
 import Profile, { UserProfile } from './components/Profile';
-import CharacterGenerator from './components/CharacterGenerator';
 import { AppBar, Toolbar, Typography, Button, IconButton, Box } from '@mui/material';
 import { Menu as MenuIcon, AccountCircle as AccountIcon, ChildCare as ChildCareIcon } from '@mui/icons-material';
+import CharacterPersonalityBuilder from './components/CharacterPersonalityBuilder';
+import { PersonalityProvider } from './components/PersonalityContext';
+import CharacterGenerator from "./components/CharacterGenerator"; // 추가
 
 interface CharacterData {
   id?: number;
@@ -26,6 +28,7 @@ export interface AuthState {
   characterData: CharacterData | null;
   userInfo: UserProfile | null;
 }
+
 
 const AppContent: React.FC = () => {
   const loadUserInfoFromStorage = (): UserProfile | null => {
@@ -96,9 +99,8 @@ const AppContent: React.FC = () => {
 
   const handleLogin = async (username: string, password: string) => {
     try {
-      const response = await axios.post('http://localhost:8080/api/v1/auth/login', { username, password });
+      const response = await axios.post('http://localhost:8080/api/auth/login', { username, password });
       const { token, username: u, email, id, child } = response.data;
-      console.log('로그인 응답 데이터:', response.data);
 
       const user: UserProfile = {
         id,
@@ -129,7 +131,7 @@ const AppContent: React.FC = () => {
 
   const handleRegister = async (username: string, password: string, email: string, phone: string) => {
     try {
-      await axios.post('http://localhost:8080/api/v1/auth/signup', { username, password, email, phone });
+      await axios.post('http://localhost:8080/api/auth/signup', { username, password, email, phone });
       alert('회원가입이 완료되었습니다. 자동으로 로그인됩니다.');
       await handleLogin(username, password);
     } catch (error: any) {
@@ -183,7 +185,7 @@ const AppContent: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post('http://localhost:8080/api/v1/auth/logout', {}, {
+        await axios.post('http://localhost:8080/api/auth/logout', {}, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -231,7 +233,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-      <>
+      <PersonalityProvider>
         {authState.isAuthenticated && (
             <AppBar position="fixed" sx={{ backgroundColor: '#fff0e6' }}>
               <Toolbar>
@@ -239,23 +241,18 @@ const AppContent: React.FC = () => {
                   <MenuIcon />
                 </IconButton>
                 <Typography sx={{ flexGrow: 1, color: '#c2675a', fontWeight: 600 }}>
-                  AI 육아 다이어리
+                  AI 산모 일기
                 </Typography>
-                <Button 
-                  onClick={() => navigate('/character')} 
-                  sx={{ color: '#c2675a' }} 
-                  startIcon={<ChildCareIcon />}
-                >
+                <Button onClick={() => navigate('/character')} sx={{ color: '#c2675a' }} startIcon={<ChildCareIcon />}>
                   캐릭터
                 </Button>
                 <Button onClick={() => navigate('/diary')} sx={{ color: '#c2675a' }}>
                   다이어리
                 </Button>
-                <Button 
-                  onClick={() => navigate('/profile')} 
-                  sx={{ color: '#c2675a' }} 
-                  startIcon={<AccountIcon />}
-                >
+                <Button onClick={() => navigate('/character-personality')} sx={{ color: '#c2675a' }}>
+                  성격 생성
+                </Button>
+                <Button onClick={() => navigate('/profile')} sx={{ color: '#c2675a' }} startIcon={<AccountIcon />}>
                   프로필
                 </Button>
                 <Button onClick={handleLogout} sx={{ color: '#c2675a' }}>
@@ -269,56 +266,80 @@ const AppContent: React.FC = () => {
 
         <Box>
           <Routes>
-            <Route 
-              path="/" 
-              element={
-                authState.isAuthenticated ? 
-                <Diary authState={authState} /> : 
-                <Login onLogin={handleLogin} />
-              } 
+            <Route
+                path="/"
+                element={
+                  authState.isAuthenticated ? (
+                      <Diary authState={authState} />
+                  ) : (
+                      <Login onLogin={handleLogin} />
+                  )
+                }
             />
-            <Route 
-              path="/register" 
-              element={<Register onRegister={handleRegister} />} 
+            <Route path="/register" element={<Register onRegister={handleRegister} />} />
+            <Route
+                path="/character-personality"
+                element={
+                  authState.isAuthenticated ? (
+                      <CharacterPersonalityBuilder
+                          onPersonalityGenerated={(result: string) => {
+                            console.log('생성된 아이 성격:', result);
+                          }}
+                      />
+                  ) : (
+                      <Navigate to="/" />
+                  )
+                }
             />
-            <Route 
-              path="/character" 
-              element={
-                authState.isAuthenticated ? 
-                <CharacterGenerator 
-                  onCharacterCreated={handleCharacterCreated} 
-                  existingCharacter={authState.characterData} 
-                /> : 
-                <Navigate to="/" />
-              } 
+
+
+            <Route
+                path="/diary"
+                element={
+                  authState.isAuthenticated ? (
+                      <Diary authState={authState} />
+                  ) : (
+                      <Navigate to="/" />
+                  )
+                }
             />
-            <Route 
-              path="/diary" 
-              element={
-                authState.isAuthenticated ? 
-                <Diary authState={authState} /> : 
-                <Navigate to="/" />
-              } 
+            <Route
+                path="/profile"
+                element={
+                  authState.isAuthenticated ? (
+                      authState.userInfo ? (
+                          <Profile
+                              userInfo={authState.userInfo}
+                              onUpdateProfile={handleUpdateProfile}
+                              onDeleteAccount={handleDeleteAccount}
+                          />
+                      ) : (
+                          <Typography sx={{ mt: 10, textAlign: 'center' }}>
+                            사용자 정보를 불러오는 중입니다...
+                          </Typography>
+                      )
+                  ) : (
+                      <Navigate to="/" />
+                  )
+                }
             />
-            <Route 
-              path="/profile" 
-              element={
-                authState.isAuthenticated ? 
-                  authState.userInfo ? 
-                    <Profile 
-                      userInfo={authState.userInfo} 
-                      onUpdateProfile={handleUpdateProfile} 
-                      onDeleteAccount={handleDeleteAccount} 
-                    /> : 
-                    <Typography sx={{ mt: 10, textAlign: 'center' }}>
-                      사용자 정보를 불러오는 중입니다...
-                    </Typography> : 
-                  <Navigate to="/" />
-              } 
+            <Route
+                path="/character"
+                element={
+                  authState.isAuthenticated ? (
+                      <CharacterGenerator
+                          onCharacterCreated={handleCharacterCreated}
+                          existingCharacter={authState.characterData}
+                      />
+                  ) : (
+                      <Navigate to="/" />
+                  )
+                }
             />
           </Routes>
+
         </Box>
-      </>
+      </PersonalityProvider>
   );
 };
 

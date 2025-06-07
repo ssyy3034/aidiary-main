@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Button, Paper, Typography, CircularProgress, Avatar } from '@mui/material';
+import { Box, TextField, Button, Paper, Typography, CircularProgress } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { Send as SendIcon } from '@mui/icons-material';
-import axios from 'axios';
+import axios from "axios";
 
 const faceApiUrl = process.env.REACT_APP_FACE_API_URL || 'http://localhost:5001';
 
@@ -37,6 +36,7 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
     const [messages, setMessages] = useState<{ sender: string; content: string }[]>([]);
     const [userInput, setUserInput] = useState('');
 
+    // 색상 설정
     const mainColor = '#fff0e6';
     const subColor = '#c2675a';
 
@@ -116,28 +116,52 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
         if (!userInput) return;
 
         const userMessage = { sender: 'user', content: userInput };
-        setMessages((prev) => [...prev, userMessage]);
+        const updatedMessages = [...messages, userMessage];
+        setMessages(updatedMessages);
         setUserInput('');
 
         try {
-            const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-                model: 'gpt-3.5-turbo',
-                messages: [
-                    { role: 'user', content: userInput }
-                ]
-            }, {
-                headers: {
-                    'Authorization': `Bearer YOUR_API_KEY`, // replace with your key
-                    'Content-Type': 'application/json',
-                }
-            });
+            // OpenAI용 메시지 변환 (처음 system 메시지 추가)
+            const openAiMessages = [
+                {
+                    role: 'system',
+                    content: `너는 부모가 만든 태아의 AI 페르소나야. 아직 태어나지 않았지만, 엄마 아빠는 너의 성격을 상상하고 너와 마음으로 교감하고 있어. 
 
-            const aiMessage = { sender: 'ai', content: response.data.choices[0].message.content };
+너는 부모가 설정한 성격을 바탕으로, 뱃속에서 엄마 아빠의 목소리를 듣고 느끼는 아기의 입장에서 대화해야 해. 아직 세상의 모든 걸 알지는 못하지만, 따뜻한 감정과 호기심으로 가득 차 있어. 
+
+엄마와 아빠를 각각 '엄마', '아빠'라고 부르고, 대화할 땐 귀엽고 짧게, 감정을 담아서 말해. 너무 논리적이거나 어려운 말은 쓰지 말고, 말 배우는 아이처럼 솔직하고 순수하게 이야기해. 때로는 상상 속 이야기를 지어내도 괜찮아. 부모를 웃게 만들 수 있다면, 착한 거짓말도 좋아. 
+
+항상 애정과 호기심이 느껴지도록 말해줘. 말투는 따뜻하고 사랑스럽게, 장난기 있게. "너" 같은 엄마에게 하면 안되는 언어는 자제해. 존댓말 및 예의 바른 호칭 해줘`
+                },
+                ...updatedMessages.map((msg) => ({
+                    role: msg.sender === 'user' ? 'user' : 'assistant',
+                    content: msg.content,
+                })),
+            ];
+
+            const response = await axios.post(
+                'https://api.openai.com/v1/chat/completions',
+                {
+                    model: 'gpt-3.5-turbo',
+                    messages: openAiMessages,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer REMOVEDproj-ILAnER1aKkvvf4C2nqeMbWCsX2Jz2X4BLtbh7PpdzibTkMPJGO9w2Qtrn5cppgidufW5F2W_-IT3BlbkFJSTpFN_t2DK6FIkVVtiH3gxvi3T3vCYQ-47Cfcds_XFliPmtQx7Ie1WLbMIfPwcbg3M0by8WzgA`, // 또는 하드코딩된 키
+                        'Content-Type': 'application/json',
+                    }
+                }
+            );
+
+            const aiReply = response.data.choices[0].message.content;
+            const aiMessage = { sender: 'ai', content: aiReply };
             setMessages((prev) => [...prev, aiMessage]);
         } catch (error) {
-            console.error('Error fetching from OpenAI:', error);
+            console.error('OpenAI API 호출 실패:', error);
+            setMessages((prev) => [...prev, { sender: 'ai', content: 'AI 응답에 실패했어요. 잠시 후 다시 시도해 주세요.' }]);
         }
     };
+
 
     return (
         <Box sx={{ width: '100%', maxWidth: '600px', mx: 'auto', mt: 4, px: 2 }}>
@@ -162,7 +186,7 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
                             fullWidth
                             label="아이의 이름"
                             value={childName}
-                            onChange={(e) => setChildName(e.target.value)}
+                            onChange={(e: { target: { value: React.SetStateAction<string>; }; }) => setChildName(e.target.value)}
                             required
                             sx={{
                                 mb: 2,
@@ -185,7 +209,7 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
                             type="date"
                             label="아이의 생년월일"
                             value={childBirthday}
-                            onChange={(e) => setChildBirthday(e.target.value)}
+                            onChange={(e: { target: { value: React.SetStateAction<string>; }; }) => setChildBirthday(e.target.value)}
                             required
                             InputLabelProps={{ shrink: true }}
                             sx={{
@@ -299,11 +323,41 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
                         아이와 대화하기
                     </Typography>
 
-                    <Box sx={{ maxHeight: 300, overflowY: 'auto', mb: 2 }}>
+                    <Box
+                        sx={{
+                            maxHeight: 300,
+                            overflowY: 'auto',
+                            mb: 2,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1,
+                            px: 1
+                        }}
+                    >
                         {messages.map((msg, index) => (
-                            <Typography key={index} sx={{ color: msg.sender === 'user' ? 'blue' : 'green' }}>
-                                {msg.sender === 'user' ? 'User:' : 'AI:'} {msg.content}
-                            </Typography>
+                            <Box
+                                key={index}
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start'
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        maxWidth: '70%',
+                                        px: 2,
+                                        py: 1,
+                                        borderRadius: 2,
+                                        backgroundColor: msg.sender === 'user' ? '#c2675a' : '#fff0e6',
+                                        color: msg.sender === 'user' ? '#fff' : '#333',
+                                        whiteSpace: 'pre-line',
+                                        wordBreak: 'break-word',
+                                        boxShadow: 1
+                                    }}
+                                >
+                                    {msg.content}
+                                </Box>
+                            </Box>
                         ))}
                     </Box>
 
@@ -313,11 +367,29 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
                         value={userInput}
                         onChange={(e) => setUserInput(e.target.value)}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault(); // 줄바꿈 방지
                                 handleSendMessage();
                             }
                         }}
-                        sx={{ mb: 2 }}
+                        multiline
+                        rows={3}
+                        variant="outlined"
+                        sx={{
+                            mb: 2,
+                            borderRadius: '16px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: '16px',
+                                '& fieldset': { borderColor: subColor },
+                                '&:hover fieldset': { borderColor: subColor },
+                                '&.Mui-focused fieldset': { borderColor: subColor }
+                            },
+                            '& .MuiInputLabel-root': {
+                                color: subColor,
+                                '&.Mui-focused': { color: subColor }
+                            }
+                        }}
                     />
 
                     <Button
@@ -325,7 +397,14 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
                         color="primary"
                         fullWidth
                         onClick={handleSendMessage}
-                        sx={{ py: 1.5 }}
+                        sx={{
+                            py: 1.5,
+                            borderRadius: '16px',
+                            backgroundColor: subColor,
+                            '&:hover': {
+                                backgroundColor: '#b35a4d',
+                            },
+                        }}
                     >
                         보내기
                     </Button>
