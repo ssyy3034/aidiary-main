@@ -147,7 +147,7 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
                 },
                 {
                     headers: {
-                        Authorization: `Bearer REMOVEDproj-ILAnER1aKkvvf4C2nqeMbWCsX2Jz2X4BLtbh7PpdzibTkMPJGO9w2Qtrn5cppgidufW5F2W_-IT3BlbkFJSTpFN_t2DK6FIkVVtiH3gxvi3T3vCYQ-47Cfcds_XFliPmtQx7Ie1WLbMIfPwcbg3M0by8WzgA`, // 또는 하드코딩된 키
+                        Authorization: `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`, // 또는 하드코딩된 키
                         'Content-Type': 'application/json',
                     }
                 }
