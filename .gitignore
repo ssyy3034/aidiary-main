@@ -47,3 +47,7 @@ out/
 
 ### Large Files ###
 *.pack
+
+/aidiary/.env
+
+.env
