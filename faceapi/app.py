@@ -161,6 +161,49 @@ def generate_ai_response():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/daily-question', methods=['GET'])  # ✅ 괄호 수정 완료
+def get_daily_question():
+    try:
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "너는 산모 일기 앱에서 매일 하나씩 질문을 만들어주는 AI야.\n"
+                    "질문은 산모가 스스로를 돌아보거나 뱃속의 아이와 감정적으로 교감할 수 있도록 도와주는 따뜻한 말투여야 해.\n"
+                    "질문은 하나만 만들어줘. 너무 일반적이지 않고, 구체적이며 감성적인 것이 좋아.\n"
+                    "예: '아이에게 편지를 쓴다면 어떤 말을 해주고 싶나요?'"
+                )
+            },
+            {
+                "role": "user",
+                "content": "오늘의 질문을 하나 만들어줘."
+            }
+        ]
+
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=messages,
+            temperature=0.9,
+            max_tokens=60
+        )
+
+        question = response.choices[0].message.content.strip().replace('"', '')
+        print(f"[INFO] 오늘의 질문 생성됨: {question}")
+
+        return jsonify({"question": question})
+
+    except Exception as e:
+        print(f"[ERROR] 오늘의 질문 생성 실패: {e}")
+        fallback_questions = [
+            "아기에게 편지를 쓴다면 어떤 말을 해주고 싶나요?",
+            "요즘 가장 감사했던 순간은 언제였어요?",
+            "오늘 하루 중 가장 따뜻했던 순간은 무엇이었나요?",
+            "지금 가장 걱정되는 것이 있다면 어떤 건가요?",
+            "아기를 생각하면 가장 먼저 떠오르는 감정은?"
+        ]
+        import random
+        return jsonify({"question": random.choice(fallback_questions)}), 200
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)
