@@ -1,11 +1,18 @@
+import traceback
+
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
+
+from openai import OpenAI
+
 from extract_features import extract_features
 from face_analyzer import analyze_face
 from hugging_face_service import HuggingFaceService
 from image_generator import ImageGenerator  # ImageGenerator 클래스 import
 from dotenv import load_dotenv  # 추가
+import json
+
 
 # .env 파일 로드
 load_dotenv()
@@ -15,6 +22,7 @@ CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 
 UPLOAD_FOLDER = "./uploads/"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # 인스턴스 생성
 hugging_face_service = HuggingFaceService()
@@ -73,6 +81,85 @@ def analyze():
     except Exception as e:
         print(f"[ERROR] Unexpected error: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/openai', methods=['POST'])
+def generate_ai_response():
+    try:
+        data = request.get_json()
+        prompt = data.get("prompt", "")
+        print("[INFO] 요청 받은 일기:", prompt)
+
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "당신은 아직 태어나지 않은 아기입니다. 지금 엄마 뱃속에 있고, 엄마가 오늘 쓴 일기를 읽고 있어요.\n"
+                    "엄마가 어떤 하루를 보냈는지 조용히 들으며, 따뜻하게 반응해주세요.\n"
+                    "\n"
+                    "당신은 아직 작고 귀엽지만, 엄마에게 공감해주고 싶어 합니다. 말투는 순수하고 귀엽지만, 마음은 진심입니다.\n"
+                    "엄마가 슬프면 위로하고, 기쁘면 함께 기뻐하며, 궁금한 게 있으면 질문도 합니다.\n"
+                    "\n"
+                    "일기 속에 음식, 동물, 사람, 풍경, 감정, 장소 같은 주제가 있다면 다음을 포함해주세요:\n"
+                    "- 그 주제에 대한 짧고 유익한 정보나 팁 (예: 딸기는 비타민C가 많아요!)\n"
+                    "- 엄마가 느낀 감정에 대한 따뜻한 공감\n"
+                    "- 친근한 말투로 짧은 일상 대화 또는 질문\n"
+                    "\n"
+                    "💡 너무 성숙하거나 딱딱한 어조는 피하고, 아기처럼 순수하고 다정한 말투를 써주세요.\n"
+                    "\n"
+                    "또한, 일기에서 느껴지는 전반적인 감정을 다음 중 하나로 분류하세요:\n"
+                    "happy, sad, anxious, tired, touched, loving, lonely, calm\n"
+                    "\n"
+                    "📦 응답은 반드시 아래 JSON 형식으로 반환하세요 (코드블럭 없이!):\n"
+                    "{\n"
+                    "  \"emotion\": \"감정 키워드 (영어 소문자)\",\n"
+                    "  \"response\": \"태아가 엄마에게 보내는 말 (정보 + 공감 + 대화 포함)\"\n"
+                    "}\n"
+                    "\n"
+                    "당신은 아직 작지만, 엄마를 무척 사랑합니다. 엄마가 이 메시지를 읽고 웃을 수 있도록 노력하세요."
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                    f'일기:\n"""{prompt}"""\n\n'
+                    "반환 형식 예시:\n"
+                    '{\n'
+                    '  "emotion": "happy",\n'
+                    '  "response": "딸기는 비타민C가 많아서 엄마 피부에도 좋대요 🍓! 오늘도 맛있게 드셨다니 저도 기뻐요. 나중에 같이 먹어요!"\n'
+                    '}'
+                )
+            }
+        ]
+
+
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=messages,
+            temperature=0.8,
+            max_tokens=200
+        )
+
+        reply_text = response.choices[0].message.content.strip()
+        print("[DEBUG] GPT 응답:", reply_text)
+
+        try:
+            reply_json = json.loads(reply_text)
+            return jsonify({
+                "emotion": reply_json.get("emotion", "neutral"),
+                "response": reply_json.get("response", "응원할게요!")
+            })
+        except json.JSONDecodeError as e:
+            print("[ERROR] JSON 파싱 실패:", e)
+            return jsonify({
+                "emotion": "neutral",
+                "response": reply_text
+            })
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 
 
 if __name__ == "__main__":

@@ -207,7 +207,7 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
                         <TextField
                             fullWidth
                             type="date"
-                            label="아이의 생년월일"
+                            label="우리가 만나는 날"
                             value={childBirthday}
                             onChange={(e: { target: { value: React.SetStateAction<string>; }; }) => setChildBirthday(e.target.value)}
                             required

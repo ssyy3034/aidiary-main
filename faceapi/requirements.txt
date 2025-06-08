@@ -1,7 +1,7 @@
 Flask
 requests
 Pillow
-flaREMOVEDcors
+flask-cors
 transformers
 openai
 python-dotenv

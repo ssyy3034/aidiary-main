@@ -31,12 +31,23 @@ interface DiaryProps {
   authState: AuthState;
 }
 
+type Emotion =
+    | 'happy'
+    | 'sad'
+    | 'anxious'
+    | 'tired'
+    | 'touched'
+    | 'loving'
+    | 'lonely'
+    | 'calm';
+
 interface DiaryEntry {
   id: number;
   title: string;
   content: string;
   date: string;
-  emotion?: 'positive' | 'negative' | 'neutral';
+  emotion?: Emotion;
+  aiResponse?: string;
 }
 
 const Diary: React.FC<DiaryProps> = ({ authState }) => {
@@ -46,12 +57,13 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingResponses, setLoadingResponses] = useState<{ [id: number]: boolean }>({});
 
   const token = localStorage.getItem('token');
   const api = axios.create({
     baseURL: 'http://localhost:8080/api',
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   });
@@ -66,22 +78,13 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
   };
 
   useEffect(() => {
-    console.log('authState 내부 정보:', authState);
-    console.log('authState.userInfo:', authState.userInfo);
-    console.log('authState.userInfo.id:', authState.userInfo?.id);
-  }, [authState]);
-  if (!authState?.userInfo?.id) {
-    return <Typography>로그인 정보를 불러오는 중입니다...</Typography>;
-  }
+    fetchEntries();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEntry.trim()) return;
     setIsSubmitting(true);
-    console.log('요청 내용:', {
-      content: newEntry,
-      userId: authState.userInfo?.id,
-    });
 
     try {
       const userId = authState?.userInfo?.id;
@@ -90,7 +93,7 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
       await api.post('/diary', {
         title: '일기',
         content: newEntry,
-        emotion: 'neutral',
+        emotion: 'calm',
         userId: userId
       });
 
@@ -129,15 +132,40 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
     }
   };
 
-  const getEmotionIcon = (emotion?: 'positive' | 'negative' | 'neutral') => {
-    switch (emotion) {
-      case 'positive': return <MoodIcon sx={{ color: '#4caf50' }} />;
-      case 'negative': return <MoodBadIcon sx={{ color: '#f44336' }} />;
-      default: return <NeutralIcon sx={{ color: '#757575' }} />;
+  const getEmotionIcon = (emotion?: Emotion) => {
+    const colorMap: { [key in Emotion]: string } = {
+      happy: '#4caf50',
+      sad: '#2196f3',
+      anxious: '#ff9800',
+      tired: '#9e9e9e',
+      touched: '#ab47bc',
+      loving: '#e91e63',
+      lonely: '#3f51b5',
+      calm: '#009688'
+    };
+    return <MoodIcon sx={{ color: colorMap[emotion || 'calm'] }} />;
+  };
+
+  const getAIAnalysis = async (
+      content: string
+  ): Promise<{ emotion: Emotion; response: string }> => {
+    try {
+      const res = await axios.post('http://localhost:5001/api/openai', {
+        prompt: content
+      });
+      return {
+        emotion: res.data.emotion || 'calm',
+        response: res.data.response || '응원할게요!'
+      };
+    } catch (err) {
+      console.error('AI 응답 실패:', err);
+      return {
+        emotion: 'calm',
+        response: '응답 생성 실패'
+      };
     }
   };
 
-  // 색상 설정
   const mainColor = '#fff0e6';
   const subColor = '#c2675a';
 
@@ -194,9 +222,36 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
                       </IconButton>
                     </Box>
                   </Box>
+
                   <Typography variant="body1" paragraph sx={{ mb: 3 }}>{entry.content}</Typography>
+
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                     <Chip icon={getEmotionIcon(entry.emotion)} label={entry.emotion} sx={{ backgroundColor: subColor, color: '#fff' }} />
+                  </Box>
+
+                  <Box sx={{ mt: 2 }}>
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={async () => {
+                          setLoadingResponses((prev) => ({ ...prev, [entry.id]: true }));
+                          const { emotion, response } = await getAIAnalysis(entry.content);
+                          setEntries((prev) =>
+                              prev.map((e) =>
+                                  e.id === entry.id ? { ...e, aiResponse: response, emotion } : e
+                              )
+                          );
+                          setLoadingResponses((prev) => ({ ...prev, [entry.id]: false }));
+                        }}
+                    >
+                      {loadingResponses[entry.id] ? '불러오는 중...' : '태아의 반응 보기'}
+                    </Button>
+
+                    {entry.aiResponse && (
+                        <Typography variant="body2" sx={{ mt: 2, fontStyle: 'italic', color: '#6d4c41' }}>
+                          👶 {entry.aiResponse}
+                        </Typography>
+                    )}
                   </Box>
                 </CardContent>
               </Card>
