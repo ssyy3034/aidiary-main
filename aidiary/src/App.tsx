@@ -69,7 +69,7 @@ const AppContent: React.FC = () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) return;
-        const response = await axios.get('[http://localhost:8080/api/user/info](http://localhost:8080/api/user/info)', {
+        const response = await axios.get('http://localhost:8080/api/user/info', {
           headers: { Authorization: `Bearer ${token}` },
         });
         const user: UserProfile = {
@@ -90,7 +90,7 @@ const AppContent: React.FC = () => {
 
   const handleLogin = async (username: string, password: string) => {
     try {
-      const response = await axios.post('[http://localhost:8080/api/auth/login](http://localhost:8080/api/auth/login)', { username, password });
+      const response = await axios.post('http://localhost:8080/api/auth/login', { username, password });
       const { token, username: u, email, id, child } = response.data;
       const user: UserProfile = {
         id,
@@ -118,7 +118,7 @@ const AppContent: React.FC = () => {
 
   const handleRegister = async (username: string, password: string, email: string, phone: string) => {
     try {
-      await axios.post('[http://localhost:8080/api/auth/signup](http://localhost:8080/api/auth/signup)', { username, password, email, phone });
+      await axios.post('http://localhost:8080/api/auth/signup', { username, password, email, phone });
       alert('회원가입이 완료되었습니다. 자동으로 로그인됩니다.');
       await handleLogin(username, password);
     } catch (error: any) {
@@ -136,7 +136,7 @@ const AppContent: React.FC = () => {
   const handleUpdateProfile = async (profile: UserProfile) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put('[http://localhost:8080/api/user/profile](http://localhost:8080/api/user/profile)', profile, {
+      await axios.put('http://localhost:8080/api/user/profile', profile, {
         headers: { Authorization: `Bearer ${token}` },
       });
       localStorage.setItem('userInfo', JSON.stringify(profile));
@@ -151,7 +151,7 @@ const AppContent: React.FC = () => {
   const handleDeleteAccount = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete('[http://localhost:8080/api/user/delete](http://localhost:8080/api/user/delete)', {
+      await axios.delete('http://localhost:8080/api/user/delete', {
         headers: { Authorization: `Bearer ${token}` },
       });
       alert('계정이 성공적으로 삭제되었습니다.');
@@ -166,7 +166,7 @@ const AppContent: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post('[http://localhost:8080/api/auth/logout](http://localhost:8080/api/auth/logout)', {}, {
+        await axios.post('http://localhost:8080/api/auth/logout', {}, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -187,7 +187,7 @@ const AppContent: React.FC = () => {
   const handleCharacterCreated = async (character: CharacterData) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('[http://localhost:8080/api/child/save](http://localhost:8080/api/child/save)', character, {
+      const response = await axios.post('http://localhost:8080/api/child/save', character, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
