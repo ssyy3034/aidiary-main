@@ -75,6 +75,7 @@ const AppContent: React.FC = () => {
         const user: UserProfile = {
           id: response.data.id,
           username: response.data.username,
+          password: response.data.password,
           email: response.data.email,
           phone: response.data.phone || '',
           child: response.data.child || null,
@@ -91,11 +92,12 @@ const AppContent: React.FC = () => {
   const handleLogin = async (username: string, password: string) => {
     try {
       const response = await axios.post('http://localhost:8080/api/auth/login', { username, password });
-      const { token, username: u, email, id, child } = response.data;
+      const { token, username: u, email, id, child,password: p } = response.data;
       const user: UserProfile = {
         id,
         username: u,
         email,
+        password: p,
         phone: '',
         child: child ?? null,
       };
