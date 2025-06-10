@@ -24,7 +24,7 @@ springdoc:
 
 jwt:
   secret: your-secret-key-here
-  expiration: 86400000 # 24시간
+  expiration: 1800 # 24시간
 
 logging:
   level:

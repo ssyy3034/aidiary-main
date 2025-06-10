@@ -45,14 +45,22 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
+        // 🔐 로그인과 동일한 방식으로 Authentication 생성
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                savedUser.getUsername(),
+                null,
+                savedUser.getAuthorities() // UserDetails 구현 필요
+        );
+
+        String token = jwtTokenProvider.createToken(authentication, savedUser.getId());
+
         return AuthResponse.builder()
                 .id(savedUser.getId())
-                .token(jwtTokenProvider.createToken(savedUser.getId(), savedUser.getRole().name()))
+                .token(token)
                 .username(savedUser.getUsername())
                 .email(savedUser.getEmail())
                 .role(savedUser.getRole().name())
                 .build();
-
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -66,7 +74,7 @@ public class AuthService {
         String token = jwtTokenProvider.createToken(authentication, user.getId());
 
         return AuthResponse.builder()
-                .id(user.getId())  // ✅ 추가
+                .id(user.getId())
                 .token(token)
                 .username(user.getUsername())
                 .email(user.getEmail())

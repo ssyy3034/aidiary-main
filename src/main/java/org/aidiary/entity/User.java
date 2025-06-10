@@ -45,8 +45,9 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Child> children = new ArrayList<>();
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Child child;
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -89,7 +90,6 @@ public class User implements UserDetails {
         this.email = email;
         this.phone = phone;
         this.name = name;
-        this.children = new ArrayList<>(); // ← 이거 안 되어 있으면 NPE 가능
     }
 
 }

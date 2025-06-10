@@ -12,6 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Child {
     @Id
+    @Column(name = "user_id") // user_id가 실제 컬럼명임을 명시
     private Long id;
 
     @Column(name = "parent1_features")
@@ -22,10 +23,10 @@ public class Child {
 
     private String prompt;
 
-    @Column(name = "gpt_response")
+    @Column(name = "gpt_response", columnDefinition = "LONGTEXT")
     private String gptResponse;
 
-    @Column(name = "character_image")
+    @Column(name = "child_image" , columnDefinition = "LONGTEXT")
     private String characterImage;
 
     @Column(name = "child_name")
@@ -34,7 +35,11 @@ public class Child {
     @Column(name = "child_birthday")
     private String childBirthday;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
+    @Column(name = "child_personality")
+    private String childPersonality;
+
+    @OneToOne
+    @MapsId // ← 핵심: Child.id = User.id
+    @JoinColumn(name = "user_id")
     private User user;
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, TextField, Button, Paper, Typography, CircularProgress } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import axios from "axios";
+import { usePersonality } from './PersonalityContext';
 
 const faceApiUrl = process.env.REACT_APP_FACE_API_URL || 'http://localhost:5001';
 
@@ -25,27 +26,36 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
     const [result, setResult] = useState<CharacterData | null>(null);
     const [status, setStatus] = useState('');
     const [loading, setLoading] = useState(false);
-    const [generatedImage, setGeneratedImage] = useState<string | null>(
-        existingCharacter ? existingCharacter.characterImage : null
-    );
+    const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+    const { personality } = usePersonality();
     const [childName, setChildName] = useState('');
     const [childBirthday, setChildBirthday] = useState('');
     const [parent1File, setParent1File] = useState<File | null>(null);
     const [parent2File, setParent2File] = useState<File | null>(null);
-
     const [messages, setMessages] = useState<{ sender: string; content: string }[]>([]);
     const [userInput, setUserInput] = useState('');
 
-    // 색상 설정
+    // 색상 설정 유지
     const mainColor = '#fff0e6';
     const subColor = '#c2675a';
+
+    // 전역 스타일 정의
+    const globalStyles = {
+        '@keyframes fadeIn': {
+            from: { opacity: 0, transform: 'translateY(20px)' },
+            to: { opacity: 1, transform: 'translateY(0)' }
+        }
+    };
 
     useEffect(() => {
         if (existingCharacter) {
             setGeneratedImage(existingCharacter.characterImage);
+            setChildName(existingCharacter.childName);
+            setChildBirthday(existingCharacter.childBirthday);
         }
     }, [existingCharacter]);
 
+    // 기존 함수들 유지
     const blobToBase64 = (blob: Blob): Promise<string> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -66,6 +76,7 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        // 기존 제출 로직 유지
         e.preventDefault();
 
         if (!childName || !childBirthday || !parent1File || !parent2File) {
@@ -99,7 +110,7 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
                 parent1Features: '',
                 parent2Features: '',
                 prompt: '',
-                gptResponse: '',
+                gptResponse: personality || '',
                 characterImage: base64Image
             };
 
@@ -113,7 +124,8 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
     };
 
     const handleSendMessage = async () => {
-        if (!userInput) return;
+        // 기존 메시지 전송 로직 유지
+        if (!userInput.trim()) return;
 
         const userMessage = { sender: 'user', content: userInput };
         const updatedMessages = [...messages, userMessage];
@@ -121,7 +133,6 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
         setUserInput('');
 
         try {
-            // OpenAI용 메시지 변환 (처음 system 메시지 추가)
             const openAiMessages = [
                 {
                     role: 'system',
@@ -147,7 +158,7 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
                 },
                 {
                     headers: {
-                        Authorization: `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`, // 또는 하드코딩된 키
+                        Authorization: `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`,
                         'Content-Type': 'application/json',
                     }
                 }
@@ -162,253 +173,404 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
         }
     };
 
-
     return (
-        <Box sx={{ width: '100%', maxWidth: '600px', mx: 'auto', mt: 4, px: 2 }}>
+        <Box sx={{
+            width: '100%',
+            maxWidth: '600px',
+            mx: 'auto',
+            mt: 4,
+            px: 2,
+            animation: 'fadeIn 0.5s ease-in-out',
+            '@keyframes fadeIn': {
+                from: { opacity: 0, transform: 'translateY(20px)' },
+                to: { opacity: 1, transform: 'translateY(0)' }
+            }
+        }}>
             <Paper
                 elevation={0}
                 sx={{
                     p: 4,
-                    backdropFilter: 'blur(8px)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                    borderRadius: '24px',
-                    border: `1px solid ${subColor}`,
-                    boxShadow: '0 8px 30px rgb(0,0,0,0.12)'
+                    backdropFilter: 'blur(12px)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                    borderRadius: '32px',
+                    border: `2px solid ${subColor}`,
+                    boxShadow: '0 10px 40px rgba(194, 103, 90, 0.15)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                        transform: 'translateY(-5px)',
+                        boxShadow: '0 15px 50px rgba(194, 103, 90, 0.2)'
+                    }
                 }}
             >
-                <Typography variant="h5" align="center" sx={{ color: subColor, fontWeight: 700, mb: 4 }}>
-                    {existingCharacter ? '생성된 AI 캐릭터' : '우리 아이 AI 캐릭터 만들기'}
-                </Typography>
-
-                {!existingCharacter && (
-                    <form onSubmit={handleSubmit}>
-                        <TextField
-                            fullWidth
-                            label="아이의 이름"
-                            value={childName}
-                            onChange={(e: { target: { value: React.SetStateAction<string>; }; }) => setChildName(e.target.value)}
-                            required
-                            sx={{
-                                mb: 2,
-                                '& .MuiOutlinedInput-root': {
-                                    borderRadius: '16px',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                                    '& fieldset': { borderColor: subColor },
-                                    '&:hover fieldset': { borderColor: subColor },
-                                    '&.Mui-focused fieldset': { borderColor: subColor }
-                                },
-                                '& .MuiInputLabel-root': {
-                                    color: subColor,
-                                    '&.Mui-focused': { color: subColor }
-                                }
-                            }}
-                        />
-
-                        <TextField
-                            fullWidth
-                            type="date"
-                            label="우리가 만나는 날"
-                            value={childBirthday}
-                            onChange={(e: { target: { value: React.SetStateAction<string>; }; }) => setChildBirthday(e.target.value)}
-                            required
-                            InputLabelProps={{ shrink: true }}
-                            sx={{
-                                mb: 3,
-                                '& .MuiOutlinedInput-root': {
-                                    borderRadius: '16px',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                                    '& fieldset': { borderColor: subColor },
-                                    '&:hover fieldset': { borderColor: subColor },
-                                    '&.Mui-focused fieldset': { borderColor: subColor }
-                                },
-                                '& .MuiInputLabel-root': {
-                                    color: subColor,
-                                    '&.Mui-focused': { color: subColor }
-                                }
-                            }}
-                        />
-
-                        <Box sx={{ mb: 2 }}>
-                            <input
-                                accept="image/*"
-                                style={{ display: 'none' }}
-                                id="parent1-upload"
-                                type="file"
-                                onChange={(e) => handleFileChange(e, 'parent1')}
-                                required
+                <form onSubmit={handleSubmit}>
+                    {!generatedImage && (
+                        <Box sx={{ mb: 4 }}>
+                            <Typography variant="h6" sx={{ mb: 2, color: subColor, fontWeight: 600 }}>
+                                아이 정보 입력
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                label="아이 이름"
+                                value={childName}
+                                onChange={(e) => setChildName(e.target.value)}
+                                sx={{
+                                    mb: 2,
+                                    '& .MuiOutlinedInput-root': {
+                                        borderRadius: '15px',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 5px 15px rgba(194, 103, 90, 0.15)'
+                                        }
+                                    }
+                                }}
                             />
-                            <label htmlFor="parent1-upload">
+                            <TextField
+                                fullWidth
+                                label="예정일"
+                                type="date"
+                                value={childBirthday}
+                                onChange={(e) => setChildBirthday(e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                                sx={{
+                                    mb: 3,
+                                    '& .MuiOutlinedInput-root': {
+                                        borderRadius: '15px',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 5px 15px rgba(194, 103, 90, 0.15)'
+                                        }
+                                    }
+                                }}
+                            />
+
+                            <Typography variant="h6" sx={{ mb: 2, color: subColor, fontWeight: 600 }}>
+                                부모님 사진 업로드
+                            </Typography>
+
+                            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
                                 <Button
-                                    component="span"
-                                    fullWidth
+                                    component="label"
                                     variant="outlined"
                                     startIcon={<CloudUploadIcon />}
                                     sx={{
+                                        flex: 1,
                                         py: 1.5,
-                                        borderRadius: '16px',
+                                        borderRadius: '15px',
                                         borderColor: subColor,
                                         color: subColor,
+                                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                        transition: 'all 0.3s ease',
                                         '&:hover': {
                                             borderColor: subColor,
-                                            backgroundColor: 'rgba(194, 103, 90, 0.1)'
+                                            backgroundColor: 'rgba(194, 103, 90, 0.1)',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 5px 15px rgba(194, 103, 90, 0.15)'
                                         }
                                     }}
                                 >
-                                    {parent1File ? parent1File.name : '첫 번째 부모 사진 업로드'}
+                                    엄마 사진
+                                    <input
+                                        type="file"
+                                        hidden
+                                        accept="image/*"
+                                        onChange={(e) => handleFileChange(e, 'parent1')}
+                                    />
                                 </Button>
-                            </label>
-                        </Box>
 
-                        <Box sx={{ mb: 3 }}>
-                            <input
-                                accept="image/*"
-                                style={{ display: 'none' }}
-                                id="parent2-upload"
-                                type="file"
-                                onChange={(e) => handleFileChange(e, 'parent2')}
-                                required
-                            />
-                            <label htmlFor="parent2-upload">
                                 <Button
-                                    component="span"
-                                    fullWidth
+                                    component="label"
                                     variant="outlined"
                                     startIcon={<CloudUploadIcon />}
                                     sx={{
+                                        flex: 1,
                                         py: 1.5,
-                                        borderRadius: '16px',
+                                        borderRadius: '15px',
                                         borderColor: subColor,
                                         color: subColor,
+                                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                        transition: 'all 0.3s ease',
                                         '&:hover': {
                                             borderColor: subColor,
-                                            backgroundColor: 'rgba(194, 103, 90, 0.1)'
+                                            backgroundColor: 'rgba(194, 103, 90, 0.1)',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 5px 15px rgba(194, 103, 90, 0.15)'
                                         }
                                     }}
                                 >
-                                    {parent2File ? parent2File.name : '두 번째 부모 사진 업로드'}
+                                    아빠 사진
+                                    <input
+                                        type="file"
+                                        hidden
+                                        accept="image/*"
+                                        onChange={(e) => handleFileChange(e, 'parent2')}
+                                    />
                                 </Button>
-                            </label>
-                        </Box>
+                            </Box>
 
-                        <Button type="submit" fullWidth sx={{
-                            py: 1.5,
-                            backgroundColor: subColor,
-                            color: 'white',
-                            borderRadius: '16px',
-                            '&:hover': {
-                                backgroundColor: '#b35a4d',
-                            },
-                            '&.Mui-disabled': {
-                                backgroundColor: 'rgba(194, 103, 90, 0.5)',
-                                color: 'white',
-                            }
+                            <Button
+                                type="submit"
+                                variant="contained"
+                                fullWidth
+                                disabled={loading}
+                                sx={{
+                                    py: 1.8,
+                                    borderRadius: '20px',
+                                    backgroundColor: subColor,
+                                    fontSize: '1.1rem',
+                                    fontWeight: 600,
+                                    textTransform: 'none',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        backgroundColor: subColor,
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 5px 15px rgba(194, 103, 90, 0.3)'
+                                    }
+                                }}
+                            >
+                                {loading ? <CircularProgress size={24} color="inherit" /> : '우리 아이 만나보기'}
+                            </Button>
+                        </Box>
+                    )}
+                </form>
+
+                {generatedImage && (
+                    <>
+                    {/* 아이 정보 섹션 추가 */}
+                        <Box sx={{
+                            mb: 4,
+                            textAlign: 'center',
+                            animation: 'fadeIn 0.5s ease-in-out',
+                            background: 'linear-gradient(145deg, rgba(255,240,230,0.4) 0%, rgba(255,255,255,0.7) 100%)',
+                            borderRadius: '24px',
+                            padding: '20px',
+                            boxShadow: '0 8px 32px rgba(194, 103, 90, 0.1)',
+                            border: '1px solid rgba(194, 103, 90, 0.1)',
+                            backdropFilter: 'blur(8px)'
                         }}>
-                            {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : '캐릭터 생성하기'}
-                        </Button>
-                    </form>
-                )}
+                            <Box sx={{
+                                mb: 3,
+                                padding: '15px',
+                                background: 'linear-gradient(135deg, rgba(194, 103, 90, 0.1) 0%, rgba(255, 255, 255, 0.3) 100%)',
+                                borderRadius: '16px',
+                                boxShadow: 'inset 0 2px 4px rgba(194, 103, 90, 0.05)'
+                            }}>
+                                <Typography
+                                    variant="h4"
+                                    sx={{
+                                        color: subColor,
+                                        fontWeight: 700,
+                                        fontSize: { xs: '2rem', sm: '2.5rem' },
+                                        textShadow: '2px 2px 4px rgba(194, 103, 90, 0.15)',
+                                        letterSpacing: '1px',
+                                        mb: 1
+                                    }}
+                                >
+                                    {childName}
+                                </Typography>
+                                <Typography
+                                    variant="subtitle1"
+                                    sx={{
+                                        color: '#888',
+                                        fontStyle: 'italic',
+                                        fontSize: { xs: '0.9rem', sm: '1rem' }
+                                    }}
+                                >
+                                    우리 가족의 새로운 행복
+                                </Typography>
+                            </Box>
 
-                {generatedImage && !existingCharacter && (
-                    <Box sx={{ mt: 4 }}>
-                        <Typography variant="h6" align="center" sx={{ color: subColor, fontWeight: 600 }}>
-                            우리 아이 캐릭터
-                        </Typography>
-                        <img src={generatedImage} alt="Generated Character" style={{ width: '100%' }} />
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 1
+                            }}>
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        color: '#666',
+                                        fontWeight: 500,
+                                        fontSize: { xs: '0.9rem', sm: '1.1rem' }
+                                    }}
+                                >
+                                    우리 아이를 만나는 날
+                                </Typography>
+                                <Box sx={{
+                                    backgroundColor: 'rgba(194, 103, 90, 0.1)',
+                                    borderRadius: '16px',
+                                    padding: '12px 24px',
+                                    display: 'inline-block',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 4px 12px rgba(194, 103, 90, 0.15)'
+                                    }
+                                }}>
+                                    <Typography
+                                        variant="h6"
+                                        sx={{
+                                            color: subColor,
+                                            fontWeight: 600,
+                                            fontSize: { xs: '1.1rem', sm: '1.3rem' },
+                                            letterSpacing: '0.5px'
+                                        }}
+                                    >
+                                        {new Date(childBirthday).toLocaleDateString('ko-KR', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        })}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </Box>
+                    <Box sx={{
+                        position: 'relative',
+                        textAlign: 'center',
+                        mb: 3,
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: -10,
+                            left: -10,
+                            right: -10,
+                            bottom: -10,
+                            background: 'rgba(255, 240, 230, 0.3)',
+                            borderRadius: '40px',
+                            zIndex: -1
+                        }
+                    }}>
+                        <img
+                            src={generatedImage}
+                            alt="우리 아이 캐릭터"
+                            style={{
+                                width: '100%',
+                                maxWidth: '300px',
+                                borderRadius: '24px',
+                                boxShadow: '0 8px 30px rgba(194, 103, 90, 0.2)',
+                                transition: 'transform 0.3s ease',
+                                cursor: 'pointer',
+                            }}
+                            onMouseOver={(e) => {
+                                e.currentTarget.style.transform = 'scale(1.02)';
+                            }}
+                            onMouseOut={(e) => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                            }}
+                        />
                     </Box>
+                    </>
                 )}
-
-                {/* Chat Interface */}
-                <Box sx={{ mt: 4 }}>
-                    <Typography variant="h6" align="center" sx={{ color: subColor, fontWeight: 600 }}>
-                        아이와 대화하기
-                    </Typography>
-
-                    <Box
-                        sx={{
+                {generatedImage && (
+                    <>
+                        <Box sx={{
                             maxHeight: 300,
                             overflowY: 'auto',
                             mb: 2,
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 1,
-                            px: 1
-                        }}
-                    >
-                        {messages.map((msg, index) => (
-                            <Box
-                                key={index}
-                                sx={{
-                                    display: 'flex',
-                                    justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start'
-                                }}
-                            >
+                            gap: 2,
+                            px: 2,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                            borderRadius: '24px',
+                            p: 3,
+                            minHeight: 150,
+                            boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.05)',
+                            '&::-webkit-scrollbar': {
+                                width: '8px'
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                                backgroundColor: `${subColor}40`,
+                                borderRadius: '4px'
+                            }
+                        }}>
+                            {messages.map((msg, index) => (
                                 <Box
+                                    key={index}
                                     sx={{
+                                        alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
                                         maxWidth: '70%',
-                                        px: 2,
-                                        py: 1,
-                                        borderRadius: 2,
-                                        backgroundColor: msg.sender === 'user' ? '#c2675a' : '#fff0e6',
+                                        px: 3,
+                                        py: 2,
+                                        borderRadius: msg.sender === 'user' ? '20px 20px 0 20px' : '20px 20px 20px 0',
+                                        backgroundColor: msg.sender === 'user' ? `${subColor}` : mainColor,
                                         color: msg.sender === 'user' ? '#fff' : '#333',
-                                        whiteSpace: 'pre-line',
-                                        wordBreak: 'break-word',
-                                        boxShadow: 1
+                                        boxShadow: '0 3px 10px rgba(0,0,0,0.1)',
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 5px 15px rgba(0,0,0,0.15)'
+                                        }
                                     }}
                                 >
-                                    {msg.content}
+                                    <Typography>{msg.content}</Typography>
                                 </Box>
-                            </Box>
-                        ))}
-                    </Box>
+                            ))}
+                        </Box>
 
-                    <TextField
-                        fullWidth
-                        label="메시지 입력"
-                        value={userInput}
-                        onChange={(e) => setUserInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault(); // 줄바꿈 방지
-                                handleSendMessage();
-                            }
-                        }}
-                        multiline
-                        rows={3}
-                        variant="outlined"
-                        sx={{
-                            mb: 2,
-                            borderRadius: '16px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: '16px',
-                                '& fieldset': { borderColor: subColor },
-                                '&:hover fieldset': { borderColor: subColor },
-                                '&.Mui-focused fieldset': { borderColor: subColor }
-                            },
-                            '& .MuiInputLabel-root': {
-                                color: subColor,
-                                '&.Mui-focused': { color: subColor }
-                            }
-                        }}
-                    />
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <TextField
+                                fullWidth
+                                placeholder="아이에게 하고 싶은 말을 입력하세요..."
+                                value={userInput}
+                                onChange={(e) => setUserInput(e.target.value)}
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendMessage();
+                                    }
+                                }}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        borderRadius: '20px',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 5px 15px rgba(194, 103, 90, 0.15)'
+                                        }
+                                    }
+                                }}
+                            />
+                            <Button
+                                onClick={handleSendMessage}
+                                variant="contained"
+                                sx={{
+                                    minWidth: '100px',
+                                    borderRadius: '20px',
+                                    backgroundColor: subColor,
+                                    fontSize: '1rem',
+                                    textTransform: 'none',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        backgroundColor: subColor,
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 5px 15px rgba(194, 103, 90, 0.3)'
+                                    }
+                                }}
+                            >
+                                전송
+                            </Button>
+                        </Box>
+                    </>
+                )}
 
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        fullWidth
-                        onClick={handleSendMessage}
+                {status && (
+                    <Typography
                         sx={{
-                            py: 1.5,
-                            borderRadius: '16px',
-                            backgroundColor: subColor,
-                            '&:hover': {
-                                backgroundColor: '#b35a4d',
-                            },
+                            mt: 2,
+                            textAlign: 'center',
+                            color: subColor,
+                            fontWeight: 500
                         }}
                     >
-                        보내기
-                    </Button>
-                </Box>
+                        {status}
+                    </Typography>
+                )}
             </Paper>
         </Box>
     );

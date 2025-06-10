@@ -1,58 +1,61 @@
 package org.aidiary.service;
 
 import jakarta.transaction.Transactional;
-import org.aidiary.dto.ChildDTO;
+import lombok.RequiredArgsConstructor;
+import org.aidiary.dto.ChildUpdateDTO;
 import org.aidiary.dto.UpdateProfileDTO;
 import org.aidiary.entity.Child;
 import org.aidiary.entity.User;
+import org.aidiary.repository.ChildRepository;
 import org.aidiary.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import org.aidiary.security.JwtTokenProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    
+
     private final UserRepository userRepository;
+    private final ChildRepository childRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     @Transactional
-    public void updateProfile(User user, UpdateProfileDTO dto) {
-        user.setPhone(dto.getPhone());
-        
-        if (dto.getChild() != null) {
-            ChildDTO childDto = dto.getChild();
-            List<Child> children = user.getChildren();
-            
-            if (children != null && !children.isEmpty()) {
-                // 기존 자녀 수정
-                Child child = children.get(0);
-                updateChildFromDto(child, childDto);
-            } else {
-                // 새로운 자녀 추가
-                Child newChild = new Child();
-                updateChildFromDto(newChild, childDto);
-                newChild.setUser(user);
-                user.getChildren().add(newChild);
-            }
-        }
-        
-        userRepository.save(user);
-    }
+    public void updateProfile(String token, UpdateProfileDTO dto) {
+        String username = jwtTokenProvider.getUsernameFromToken(token);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-    private void updateChildFromDto(Child child, ChildDTO dto) {
-        child.setParent1Features(dto.getParent1Features());
-        child.setParent2Features(dto.getParent2Features());
-        child.setPrompt(dto.getPrompt());
-        child.setGptResponse(dto.getGptResponse());
-        child.setCharacterImage(dto.getCharacterImage());
+        // ✨ 선택적 phone 업데이트
+        if (dto.getPhone() != null) {
+            user.setPhone(dto.getPhone());
+        }
+
+        // ✨ 자녀 정보가 있을 경우
+        ChildUpdateDTO childDto = dto.getChild();
+        if (childDto != null) {
+            Optional<Child> existingChild = childRepository.findByUser_Id(user.getId());
+            Child child = existingChild.orElse(new Child());
+
+            // 부분 업데이트
+            if (childDto.getChildName() != null) child.setChildName(childDto.getChildName());
+            if (childDto.getChildBirthday() != null) child.setChildBirthday(childDto.getChildBirthday());
+            if (childDto.getGptResponse() != null) child.setGptResponse(childDto.getGptResponse());
+
+            // 새로 만든 경우를 대비해 user 설정
+            child.setUser(user);
+            childRepository.save(child);
+        }
+
+        userRepository.save(user); // 변경사항 저장
     }
 
     public User findByUsername(String userName) {
