@@ -1,6 +1,7 @@
 package org.aidiary.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.aidiary.dto.ChildDTO;
 import org.aidiary.entity.Child;
 import org.aidiary.entity.User;
@@ -13,6 +14,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ChildService {
 
     private final ChildRepository childRepository;
@@ -20,52 +22,66 @@ public class ChildService {
 
     @Transactional
     public ChildDTO saveChildData(ChildDTO childDto) {
-        if (childDto == null || childDto.getUserId() == null) {
-            throw new IllegalArgumentException("Child DTO or userId cannot be null");
-        }
+        validateInput(childDto);
+
+        log.debug("📥 [ChildService] 받은 ChildDTO: {}", childDto);
 
         User user = userRepository.findById(childDto.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + childDto.getUserId()));
+        log.debug("✅ [ChildService] User 조회 성공: {}", user.getUsername());
 
-        Child child = new Child();
-        child.setUser(user);
-        child.setParent1Features(childDto.getParent1Features());
-        child.setParent2Features(childDto.getParent2Features());
-        child.setPrompt(childDto.getPrompt());
-        child.setGptResponse(childDto.getGptResponse());
-        child.setCharacterImage(childDto.getCharacterImage());
+        Child child = childRepository.findById(user.getId())
+                .orElseGet(() -> createNewChild(user));
+
+        updateChildFields(child, childDto);
 
         Child saved = childRepository.save(child);
+        log.debug("💾 [ChildService] Child 저장 또는 수정 완료");
+
         return convertToDto(saved);
     }
-
 
     public Optional<ChildDTO> getChildByUserId(Long id) {
         return childRepository.findById(id)
                 .map(this::convertToDto);
     }
 
-    private Child convertToEntity(ChildDTO dto) {
+    private void validateInput(ChildDTO dto) {
+        if (dto == null || dto.getUserId() == null) {
+            throw new IllegalArgumentException("Child DTO 또는 userId가 null입니다.");
+        }
+        if (dto.getCharacterImage() == null || dto.getCharacterImage().isEmpty()) {
+            throw new IllegalArgumentException("characterImage는 필수입니다.");
+        }
+    }
+
+    private Child createNewChild(User user) {
         Child child = new Child();
-        child.setId(dto.getId());  // User의 id를 그대로 사용
+        child.setUser(user); // @MapsId를 위한 설정
+        return child;
+    }
+
+    private void updateChildFields(Child child, ChildDTO dto) {
         child.setParent1Features(dto.getParent1Features());
         child.setParent2Features(dto.getParent2Features());
         child.setPrompt(dto.getPrompt());
         child.setGptResponse(dto.getGptResponse());
         child.setCharacterImage(dto.getCharacterImage());
-        return child;
+        child.setChildName(dto.getChildName());
+        child.setChildBirthday(dto.getChildBirthday());
     }
 
     private ChildDTO convertToDto(Child entity) {
         return ChildDTO.builder()
-                .id(entity.getId()) // 자녀 ID
-                .userId(entity.getUser().getId()) // 부모 ID
+                .id(entity.getId())
+                .userId(entity.getUser().getId())
                 .parent1Features(entity.getParent1Features())
                 .parent2Features(entity.getParent2Features())
                 .prompt(entity.getPrompt())
                 .gptResponse(entity.getGptResponse())
                 .characterImage(entity.getCharacterImage())
+                .childName(entity.getChildName())
+                .childBirthday(entity.getChildBirthday())
                 .build();
     }
-
 }

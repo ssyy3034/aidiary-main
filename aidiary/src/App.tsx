@@ -136,11 +136,20 @@ const AppContent: React.FC = () => {
   const handleUpdateProfile = async (profile: UserProfile) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put('http://localhost:8080/api/user/profile', profile, {
+      const updatePayload = {
+        phone: profile.phone,
+        child: {
+          childName: profile.child.childName,
+          childBirthday: profile.child.meetDate,
+        },
+      };
+      await axios.patch('http://localhost:8080/api/user/profile', updatePayload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      localStorage.setItem('userInfo', JSON.stringify(profile));
-      setAuthState((prev) => ({ ...prev, userInfo: profile }));
+
+      const updatedUser = { ...profile };
+      localStorage.setItem('userInfo', JSON.stringify(updatedUser));
+      setAuthState((prev) => ({ ...prev, userInfo: updatedUser }));
       alert('프로필이 업데이트되었습니다.');
     } catch (error) {
       console.error('프로필 업데이트 실패:', error);
@@ -188,11 +197,13 @@ const AppContent: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post('http://localhost:8080/api/child/save', character, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+      );
+      console.log('[✅ RESPONSE DATA]', response.data);
       const savedCharacterData = response.data;
       localStorage.setItem('characterData', JSON.stringify(savedCharacterData));
       setAuthState((prev) => ({
@@ -208,20 +219,59 @@ const AppContent: React.FC = () => {
     }
   };
 
-  return ( <PersonalityProvider>
-    {authState.isAuthenticated && <SidebarMenu onLogout={handleLogout} />}
-    {authState.isAuthenticated && <Toolbar />} <Box> <Routes>
-    \<Route path="/" element={authState.isAuthenticated ? <Diary authState={authState} /> : <Login onLogin={handleLogin} />} />
-    \<Route path="/register" element={<Register onRegister={handleRegister} />} />
-    \<Route path="/character-personality" element={authState.isAuthenticated ? <CharacterPersonalityBuilder onPersonalityGenerated={(result) => console.log('성격 생성:', result)} /> : <Navigate to="/" />} />
-    \<Route path="/diary" element={authState.isAuthenticated ? <Diary authState={authState} /> : <Navigate to="/" />} />
-    \<Route path="/profile" element={authState.isAuthenticated ? (authState.userInfo ? <Profile userInfo={authState.userInfo} onUpdateProfile={handleUpdateProfile} onDeleteAccount={handleDeleteAccount} /> : <Typography sx={{ mt: 10, textAlign: 'center' }}>사용자 정보를 불러오는 중입니다...</Typography>) : <Navigate to="/" />} />
-    \<Route path="/character" element={authState.isAuthenticated ? <CharacterGenerator onCharacterCreated={handleCharacterCreated} existingCharacter={authState.characterData} /> : <Navigate to="/" />} /> </Routes> </Box> </PersonalityProvider>
-);
+  // ✅ 성격 생성 완료 후 캐릭터 생성 페이지로 이동
+  const handlePersonalityGenerated = (result: any) => {
+    console.log('성격 생성 완료:', result);
+    navigate('/character');
+  };
+
+  return (
+      <Box>
+        {authState.isAuthenticated && <SidebarMenu onLogout={handleLogout} />}
+        {authState.isAuthenticated && <Toolbar />}
+        <Routes>
+          <Route path="/" element={authState.isAuthenticated ? <Diary authState={authState} /> : <Login onLogin={handleLogin} />} />
+          <Route path="/register" element={<Register onRegister={handleRegister} />} />
+          <Route
+              path="/character-personality"
+              element={authState.isAuthenticated ?
+                  <CharacterPersonalityBuilder onPersonalityGenerated={handlePersonalityGenerated} /> :
+                  <Navigate to="/" />
+              }
+          />
+          <Route path="/diary" element={
+            authState.isAuthenticated ?
+                <Diary
+                    key={authState.characterData?.id || authState.userInfo?.id || 'default'}
+                    authState={authState}
+                />
+                : <Navigate to="/" />
+          } />
+          <Route path="/profile" element={authState.isAuthenticated ? (
+              authState.userInfo ? (
+                  <Profile
+                      userInfo={authState.userInfo}
+                      onUpdateProfile={handleUpdateProfile}
+                      onDeleteAccount={handleDeleteAccount}
+                  />
+              ) : (
+                  <Typography sx={{ mt: 10, textAlign: 'center' }}>사용자 정보를 불러오는 중입니다...</Typography>
+              )
+          ) : <Navigate to="/" />} />
+          <Route path="/character" element={authState.isAuthenticated ? <CharacterGenerator onCharacterCreated={handleCharacterCreated} existingCharacter={authState.characterData} /> : <Navigate to="/" />} />
+        </Routes>
+      </Box>
+  );
 };
 
+// ✅ PersonalityProvider를 App 전체를 감싸도록 상위로 이동
 const App: React.FC = () => {
-  return ( <Router> <AppContent /> </Router>
+  return (
+      <PersonalityProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </PersonalityProvider>
   );
 };
 

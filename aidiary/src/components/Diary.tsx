@@ -82,7 +82,7 @@
     useEffect(() => {
       fetchEntries();
       fetchDailyPrompt();
-    }, []);
+    }, [authState]);
 
     const fetchDailyPrompt = async () => {
       try {

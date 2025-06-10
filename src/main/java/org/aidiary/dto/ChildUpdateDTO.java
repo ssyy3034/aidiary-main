@@ -3,12 +3,8 @@ package org.aidiary.dto;
 import lombok.Data;
 
 @Data
-
-
 public class ChildUpdateDTO {
-    private String parent1Features;
-    private String parent2Features;
-    private String prompt;
-    private String gptResponse;
-    private String characterImage;
+    private String childName;
+    private String childBirthday; // 또는 meetDate로 명확히
+    private String gptResponse; // optional
 }
