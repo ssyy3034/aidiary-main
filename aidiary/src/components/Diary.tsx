@@ -46,7 +46,7 @@
     id: number;
     title: string;
     content: string;
-    date: string;
+    createdAt: string;
     emotion?: Emotion;
     aiResponse?: string;
   }
@@ -104,7 +104,7 @@
         const userId = authState?.userInfo?.id;
         if (!userId) throw new Error('로그인 정보가 없습니다.');
 
-        await api.post('/diary', {
+        const res = await api.post('/diary', {
           title: '일기',
           content: newEntry,
           emotion: 'calm',
@@ -112,7 +112,7 @@
         });
 
         setNewEntry('');
-        fetchEntries();
+        setEntries(prev => [...prev, res.data]);
       } catch (err) {
         console.error('작성 실패', err);
       } finally {
@@ -240,7 +240,7 @@
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <ScheduleIcon sx={{ color: '#7f8c8d' }} />
-                        <Typography color="textSecondary">{entry.date}</Typography>
+                        <Typography color="textSecondary">{entry.createdAt}</Typography>
                       </Box>
                       <Box>
                         <IconButton onClick={() => setEditingEntry(entry)}><EditIcon sx={{ color: subColor }} /></IconButton>
