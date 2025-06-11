@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Paper,
@@ -22,10 +22,11 @@ import {
 
 interface ChildProfile {
     childName: string;
-    meetDate: string; // 임산부 앱에서는 생년월일 대신 만나는 예정일로 변경
+    meetDate: string;
 }
 
 export interface UserProfile {
+    password: string;
     id: number;
     username: string;
     email: string;
@@ -51,6 +52,18 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
         ...userInfo,
         child: userInfo.child ?? defaultChild,
     });
+
+    // userInfo가 변경될 때마다 프로필 상태 업데이트
+    useEffect(() => {
+        setProfile({
+            ...userInfo,
+            child: userInfo.child ?? defaultChild,
+        });
+        setEditedProfile({
+            ...userInfo,
+            child: userInfo.child ?? defaultChild,
+        });
+    }, [userInfo]);
 
     const [isEditing, setIsEditing] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -78,8 +91,15 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
     };
 
     const handleSave = () => {
-        setProfile(editedProfile);
-        onUpdateProfile(editedProfile);
+        const updatedProfile = {
+            ...editedProfile,
+            child: {
+                ...editedProfile.child,
+                meetDate: editedProfile.child.meetDate || ''
+            }
+        };
+        setProfile(updatedProfile);
+        onUpdateProfile(updatedProfile);
         setIsEditing(false);
     };
 
@@ -127,8 +147,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                             {[
                                 { label: '이메일', value: profile.email },
                                 { label: '전화번호', value: profile.phone },
-                                { label: '아이 이름', value: profile.child.childName },
-                                { label: '우리가 만나는 날', value: profile.child.meetDate || '입력되지 않음' },
+                                { label: '비밀번호', value:profile.password},
                             ].map((item, index) => (
                                 <Box key={index} sx={{ display: 'flex', mb: 2, alignItems: 'center' }}>
                                     <Typography sx={{ width: '30%', color: '#7f8c8d', fontWeight: 'bold' }}>{item.label}</Typography>
@@ -141,16 +160,24 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                     <Box component="form" sx={{ '& .MuiTextField-root': { mb: 3 } }}>
                         <Typography variant="h6" sx={{ mb: 3, color: subColor }}>정보 수정</Typography>
 
-                        <TextField fullWidth label="이메일" type="email" value={editedProfile.email} onChange={(e) => setEditedProfile({ ...editedProfile, email: e.target.value })} sx={textFieldStyle} />
-                        <TextField fullWidth label="전화번호" type="tel" value={editedProfile.phone} onChange={(e) => setEditedProfile({ ...editedProfile, phone: e.target.value })} sx={textFieldStyle} />
-                        <TextField fullWidth label="자녀 이름" type="text" value={editedProfile.child.childName} onChange={(e) => setEditedProfile({ ...editedProfile, child: { ...editedProfile.child, childName: e.target.value } })} sx={textFieldStyle} />
-                        <TextField fullWidth label="우리가 만나는 날" type="date" InputLabelProps={{ shrink: true }} value={editedProfile.child.meetDate} onChange={(e) => setEditedProfile({ ...editedProfile, child: { ...editedProfile.child, meetDate: e.target.value } })} sx={textFieldStyle} />
+                        <TextField fullWidth label="이메일" type="email" value={editedProfile.email}
+                                   onChange={(e) => setEditedProfile({ ...editedProfile, email: e.target.value })}
+                                   sx={textFieldStyle} />
+                        <TextField fullWidth label="전화번호" type="tel" value={editedProfile.phone}
+                                   onChange={(e) => setEditedProfile({ ...editedProfile, phone: e.target.value })}
+                                   sx={textFieldStyle} />
+                        
+
 
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
-                            <Button variant="outlined" startIcon={<CancelIcon />} onClick={() => setIsEditing(false)} sx={{ borderColor: '#7f8c8d', color: '#7f8c8d', '&:hover': { borderColor: '#95a5a6', backgroundColor: 'rgba(127, 140, 141, 0.1)' } }}>
+                            <Button variant="outlined" startIcon={<CancelIcon />}
+                                    onClick={() => setIsEditing(false)}
+                                    sx={{ borderColor: '#7f8c8d', color: '#7f8c8d', '&:hover': { borderColor: '#95a5a6', backgroundColor: 'rgba(127, 140, 141, 0.1)' } }}>
                                 취소
                             </Button>
-                            <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave} sx={{ backgroundColor: subColor, '&:hover': { backgroundColor: '#b35a4d' } }}>
+                            <Button variant="contained" startIcon={<SaveIcon />}
+                                    onClick={handleSave}
+                                    sx={{ backgroundColor: subColor, '&:hover': { backgroundColor: '#b35a4d' } }}>
                                 저장
                             </Button>
                         </Box>
@@ -158,7 +185,8 @@ const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAc
                 )}
             </Paper>
 
-            <Dialog open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} PaperProps={{ sx: { borderRadius: 2, p: 2 } }}>
+            <Dialog open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}
+                    PaperProps={{ sx: { borderRadius: 2, p: 2 } }}>
                 <DialogTitle sx={{ color: '#e74c3c' }}>계정 삭제 확인</DialogTitle>
                 <DialogContent>
                     <Typography sx={{ color: '#2c3e50' }}>
