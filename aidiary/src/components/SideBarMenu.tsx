@@ -35,7 +35,7 @@ const SidebarMenu: React.FC<SidebarProps> = ({ onLogout }) => {
     };
 
     const menuItems = [
-        { text: '캐릭터 생성', icon: <ChildCareIcon />, path: '/character' },
+        { text: '캐릭터', icon: <ChildCareIcon />, path: '/character' },
         { text: '성격 생성', icon: <PersonalityIcon />, path: '/character-personality' },
         { text: '다이어리', icon: <DiaryIcon />, path: '/diary' },
         { text: '프로필', icon: <AccountIcon />, path: '/profile' },
