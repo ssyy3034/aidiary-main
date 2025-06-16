@@ -2,15 +2,16 @@ package org.aidiary.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.aidiary.dto.CreateDiaryDTO;
-import org.aidiary.dto.DiaryResponseDTO;
+
+import org.aidiary.dto.response.DiaryResponseDTO;
 import org.aidiary.entity.Diary;
 import org.aidiary.entity.User;
 import org.aidiary.service.DiaryService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/diary")
@@ -20,26 +21,25 @@ public class DiaryController {
     private final DiaryService diaryService;
 
     @GetMapping
-    public List<DiaryResponseDTO> getAllDiaries(@AuthenticationPrincipal User user) {
-        return diaryService.getAllDiaries();
+    public ResponseEntity<Page<DiaryResponseDTO>> getDiaries(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Page<DiaryResponseDTO> diaryPage = diaryService.getDiariesByUser(user.getId(), page, size);
+        return ResponseEntity.ok(diaryPage);
     }
+
 
     @PostMapping
-    public Diary createDiary(@RequestBody CreateDiaryDTO dto,
-                             @AuthenticationPrincipal User user) {
-        return diaryService.createDiary(dto, user.getId()); // userId를 서버에서 추출
+    public DiaryResponseDTO createDiary(@RequestBody CreateDiaryDTO dto,
+                                        @AuthenticationPrincipal User user) {
+        return diaryService.createDiary(dto, user.getId());
     }
 
-//    @GetMapping("/{id}")
-//    public ResponseEntity<DiaryResponseDTO> getDiary(@PathVariable Long id) {
-//        return diaryService.getDiary(id)
-//                .map(ResponseEntity::ok)
-//                .orElse(ResponseEntity.notFound().build());
-//    }
-
     @PutMapping("/{id}")
-    public Diary updateDiary(@PathVariable Long id,
-                             @RequestBody CreateDiaryDTO dto) {
+    public DiaryResponseDTO updateDiary(@PathVariable Long id,
+                                        @RequestBody CreateDiaryDTO dto) {
         return diaryService.updateDiary(id, dto);
     }
 

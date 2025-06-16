@@ -1,19 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Box,
-  Paper,
-  TextField,
-  Typography,
-  Card,
-  CardContent,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Chip,
-  Button
+  Box, Paper, TextField, Typography, Card, CardContent, IconButton,
+  Dialog, DialogTitle, DialogContent, DialogActions, Chip, Button
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -29,15 +18,7 @@ interface DiaryProps {
   authState: AuthState;
 }
 
-type Emotion =
-    | 'happy'
-    | 'sad'
-    | 'anxious'
-    | 'tired'
-    | 'touched'
-    | 'loving'
-    | 'lonely'
-    | 'calm';
+type Emotion = 'happy' | 'sad' | 'anxious' | 'tired' | 'touched' | 'loving' | 'lonely' | 'calm';
 
 interface DiaryEntry {
   id: number;
@@ -57,6 +38,9 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingResponses, setLoadingResponses] = useState<{ [id: number]: boolean }>({});
   const [dailyPrompt, setDailyPrompt] = useState('');
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
 
   const token = localStorage.getItem('token');
   const api = axios.create({
@@ -67,19 +51,28 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
     }
   });
 
-  const fetchEntries = async () => {
+  const fetchEntries = async (pageParam = 0, size = 4) => {
     try {
-      const res = await api.get('/diary', {
-        headers: { 'Cache-Control': 'no-cache' }
-      });
-      const sorted = res.data.sort((a: DiaryEntry, b: DiaryEntry) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-      setEntries(sorted);
+      const res = await api.get('/diary', { params: { page: pageParam, size } });
+      const { content, totalPages, number } = res.data;
+
+      const mappedEntries: DiaryEntry[] = content.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        date: item.createdAt,
+        emotion: item.emotion
+      }));
+
+      setEntries(mappedEntries);
+      setPage(number);
+      setTotalPages(totalPages);
+      console.log(`[📘 ${content.length}개 일기 불러옴] 현재 페이지: ${number + 1}/${totalPages}`);
     } catch (err) {
-      console.error('일기 불러오기 실패', err);
+      console.error('일기 불러오기 실패:', err);
     }
   };
+
 
   const fetchDailyPrompt = async () => {
     try {
@@ -101,17 +94,20 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
     if (!newEntry.trim()) return;
     setIsSubmitting(true);
 
+    const payload = {
+      title: '일기',
+      content: newEntry,
+      emotion: 'calm'
+    };
+
     try {
-      await api.post('/diary', {
-        title: '일기',
-        content: newEntry,
-        emotion: 'calm'
-      });
-      setNewEntry('');
+      await api.post('/diary', payload);
+      setNewEntry(''); // ✅ 성공 후 비우기
       await fetchEntries();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('작성 실패', err);
+      alert('일기 작성에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -157,13 +153,9 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
     return <MoodIcon sx={{ color: colorMap[emotion || 'calm'] }} />;
   };
 
-  const getAIAnalysis = async (
-      content: string
-  ): Promise<{ emotion: Emotion; response: string }> => {
+  const getAIAnalysis = async (content: string): Promise<{ emotion: Emotion; response: string }> => {
     try {
-      const res = await axios.post('http://localhost:5001/api/openai', {
-        prompt: content
-      });
+      const res = await axios.post('http://localhost:5001/api/openai', { prompt: content });
       return {
         emotion: res.data.emotion || 'calm',
         response: res.data.response || '응원할게요!'
@@ -186,27 +178,13 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
           우리 아이의 성장일기
         </Typography>
 
-        <Grid item xs={12}>
-          {dailyPrompt && (
-              <Paper
-                  sx={{
-                    p: 2,
-                    mb: 2,
-                    backgroundColor: '#fffaf0',
-                    borderLeft: `6px solid ${subColor}`,
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => setNewEntry((prev) => `${dailyPrompt}\n${prev}`)}
-              >
-                <Typography variant="subtitle1" sx={{ color: subColor }}>
-                  ✨ 오늘의 질문: {dailyPrompt}
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#888' }}>
-                  (눌러서 일기에 추가할 수 있어요)
-                </Typography>
-              </Paper>
-          )}
-        </Grid>
+        {dailyPrompt && (
+            <Paper sx={{ p: 2, mb: 2, backgroundColor: '#fffaf0', borderLeft: `6px solid ${subColor}`, cursor: 'pointer' }}
+                   onClick={() => setNewEntry((prev) => `${dailyPrompt}\n${prev}`)}>
+              <Typography variant="subtitle1" sx={{ color: subColor }}>✨ 오늘의 질문: {dailyPrompt}</Typography>
+              <Typography variant="caption" sx={{ color: '#888' }}>(눌러서 일기에 추가할 수 있어요)</Typography>
+            </Paper>
+        )}
 
         <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 2, backgroundColor: '#ffffff' }}>
           <form onSubmit={handleSubmit}>
@@ -216,20 +194,19 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
                     fullWidth
                     multiline
                     rows={4}
+                    autoFocus
                     placeholder="당신의 생각을 들려주세요"
                     value={newEntry}
                     onChange={(e) => setNewEntry(e.target.value)}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, borderColor: subColor } }}
                 />
               </Grid>
               <Grid item xs={12}>
                 <Button
                     type="submit"
                     variant="contained"
-                    color="primary"
                     endIcon={<SendIcon />}
-                    disabled={isSubmitting || !newEntry.trim()}
                     fullWidth
+                    disabled={isSubmitting}
                     sx={{ py: 1.5, borderRadius: 2, backgroundColor: subColor }}
                 >
                   기록하기
@@ -241,42 +218,36 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
 
         <Box sx={{ display: 'grid', gap: 3 }}>
           {entries.map((entry) => (
-              <Card key={entry.id} sx={{ borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Card key={entry.id}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <ScheduleIcon sx={{ color: '#7f8c8d' }} />
                       <Typography color="textSecondary">{entry.date}</Typography>
                     </Box>
                     <Box>
                       <IconButton onClick={() => setEditingEntry(entry)}><EditIcon sx={{ color: subColor }} /></IconButton>
-                      <IconButton color="error" onClick={() => { setSelectedEntry(entry); setShowDeleteConfirm(true); }}>
-                        <DeleteIcon sx={{ color: subColor }} />
-                      </IconButton>
+                      <IconButton onClick={() => { setSelectedEntry(entry); setShowDeleteConfirm(true); }}><DeleteIcon sx={{ color: subColor }} /></IconButton>
                     </Box>
                   </Box>
 
-                  <Typography variant="body1" paragraph sx={{ mb: 3 }}>{entry.content}</Typography>
+                  <Typography variant="body1" sx={{ mt: 2 }}>{entry.content}</Typography>
 
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Box sx={{ mt: 2 }}>
                     <Chip icon={getEmotionIcon(entry.emotion)} label={entry.emotion} sx={{ backgroundColor: subColor, color: '#fff' }} />
                   </Box>
 
                   <Box sx={{ mt: 2 }}>
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={async () => {
-                          setLoadingResponses((prev) => ({ ...prev, [entry.id]: true }));
-                          const { emotion, response } = await getAIAnalysis(entry.content);
-                          setEntries((prev) =>
-                              prev.map((e) =>
-                                  e.id === entry.id ? { ...e, aiResponse: response, emotion } : e
-                              )
-                          );
-                          setLoadingResponses((prev) => ({ ...prev, [entry.id]: false }));
-                        }}
-                    >
+                    <Button variant="outlined" size="small" onClick={async () => {
+                      setLoadingResponses((prev) => ({ ...prev, [entry.id]: true }));
+                      const { emotion, response } = await getAIAnalysis(entry.content);
+                      setEntries((prev) =>
+                          prev.map((e) =>
+                              e.id === entry.id ? { ...e, aiResponse: response, emotion } : e
+                          )
+                      );
+                      setLoadingResponses((prev) => ({ ...prev, [entry.id]: false }));
+                    }}>
                       {loadingResponses[entry.id] ? '불러오는 중...' : '태아의 반응 보기'}
                     </Button>
 
@@ -289,8 +260,27 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
                 </CardContent>
               </Card>
           ))}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, gap: 2 }}>
+            <Button
+                onClick={() => fetchEntries(page - 1)}
+                disabled={page === 0}
+                variant="outlined"
+            >
+              이전
+            </Button>
+            <Typography sx={{ alignSelf: 'center' }}>{page + 1} / {totalPages}</Typography>
+            <Button
+                onClick={() => fetchEntries(page + 1)}
+                disabled={page + 1 >= totalPages}
+                variant="outlined"
+            >
+              다음
+            </Button>
+          </Box>
+
         </Box>
 
+        {/* 수정 다이얼로그 */}
         <Dialog open={!!editingEntry} onClose={() => setEditingEntry(null)} maxWidth="md" fullWidth>
           <DialogTitle>일기 수정</DialogTitle>
           <DialogContent>
@@ -308,6 +298,7 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
           </DialogActions>
         </Dialog>
 
+        {/* 삭제 확인 */}
         <Dialog open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}>
           <DialogTitle>삭제 확인</DialogTitle>
           <DialogContent>정말로 이 일기를 삭제하시겠습니까?</DialogContent>

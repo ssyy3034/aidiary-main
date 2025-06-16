@@ -1,4 +1,4 @@
-package org.aidiary.dto;
+package org.aidiary.dto.response;
 
 import lombok.Builder;
 import lombok.Data;
