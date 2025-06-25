@@ -112,21 +112,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     </form>
                 </div>
 
-                <div className="flex justify-center space-x-4 text-sm">
-          <span
-              className="cursor-pointer transition-colors duration-300 flex items-center"
-              style={{ color: subColor }}
-          >
-            비밀번호 찾기
-          </span>
-                    <span style={{ color: subColor }}>•</span>
-                    <span
-                        className="cursor-pointer transition-colors duration-300 flex items-center"
-                        style={{ color: subColor }}
-                    >
-            도움말
-          </span>
-                </div>
 
                 <div className="text-center text-xs mt-4" style={{ color: subColor }}>
                     <p>함께하는 임신과 출산의 여정</p>

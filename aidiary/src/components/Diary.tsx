@@ -13,6 +13,7 @@ import {
   Schedule as ScheduleIcon
 } from '@mui/icons-material';
 import { AuthState } from '../App';
+import dayjs from 'dayjs';
 
 interface DiaryProps {
   authState: AuthState;
@@ -223,7 +224,8 @@ const Diary: React.FC<DiaryProps> = ({ authState }) => {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <ScheduleIcon sx={{ color: '#7f8c8d' }} />
-                      <Typography color="textSecondary">{entry.date}</Typography>
+                      <Typography color="textSecondary">{dayjs(entry.date).format('YYYY년 MM월 DD일 HH:mm')}</Typography>
+
                     </Box>
                     <Box>
                       <IconButton onClick={() => setEditingEntry(entry)}><EditIcon sx={{ color: subColor }} /></IconButton>

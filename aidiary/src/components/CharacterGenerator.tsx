@@ -5,6 +5,7 @@ import axios from "axios";
 import { usePersonality } from './PersonalityContext';
 
 const faceApiUrl = process.env.REACT_APP_FACE_API_URL || 'http://localhost:5001';
+const backendApiUrl = process.env.REACT_APP_BACKEND_API_URL || 'http://localhost:8080';
 
 interface CharacterData {
     id?: number;
@@ -34,6 +35,39 @@ const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({ onCharacterCrea
     const [parent2File, setParent2File] = useState<File | null>(null);
     const [messages, setMessages] = useState<{ sender: string; content: string }[]>([]);
     const [userInput, setUserInput] = useState('');
+
+    useEffect(() => {
+        const fetchExistingChild = async () => {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            try {
+                const res = await axios.get(`${backendApiUrl}/api/child/me`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                const data = res.data;
+                if (data) {
+                    const loaded: CharacterData = {
+                        childName: data.childName,
+                        childBirthday: data.meetDate,
+                        parent1Features: data.parent1Features ?? '',
+                        parent2Features: data.parent2Features ?? '',
+                        prompt: data.prompt ?? '',
+                        gptResponse: data.gptResponse ?? '',
+                        characterImage: data.characterImage
+                    };
+                    setResult(loaded);
+                    setGeneratedImage(loaded.characterImage);
+                    setChildName(loaded.childName);
+                    setChildBirthday(loaded.childBirthday);
+                }
+            } catch (err) {
+                console.log('❌ 기존 캐릭터 없음 또는 요청 실패', err);
+            }
+        };
+        fetchExistingChild();
+    }, []);
 
     // 색상 설정 유지
     const mainColor = '#fff0e6';
