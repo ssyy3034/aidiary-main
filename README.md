@@ -1,63 +1,70 @@
-# Aidiary 프로젝트
+# 🌿 Aidiary (AI 다이어리)
 
-## 프로젝트 개요
-Aidiary는 산모의 정서 관리와 가족 유대 형성을 지원하는 AI 기반 일기 서비스입니다.
-주요 목표는 감정 기반 일기 작성, AI 조언 제공, 부모의 얼굴과 초음파 정보를 기반으로 한 아이 캐릭터 생성 및 정서적 상호작용을 통해 임신 중 산모의 정서적 안정과 가족 유대 강화를 돕는 것입니다.
+> 산모의 마음을 기록하고, AI와 함께 돌보는 일기 서비스
 
-## 주요 기능
-- 회원가입 및 로그인 (JWT 기반 인증)
-- 사용자 정보 조회, 수정, 삭제 (CRUD)
-- 감정 기반 일기 작성 및 감정 분석
-- AI 조언 제공
-- AI 캐릭터 생성
-- 캐릭터와 정서적 상호작용
+**Aidiary**는 임신 중인 산모의 정서적 안정을 돕고, 가족 간 유대감을 강화하기 위해 만들어진 **AI 기반 산모 일기 서비스**입니다.  
+감정 기반 일기 작성, AI 피드백, 아기 캐릭터와의 교감을 통해 산모가 더욱 긍정적인 임신 경험을 할 수 있도록 지원합니다.
 
-## 기술 스택
-- 백엔드: Java, Spring Boot, JPA, Hibernate
-- 데이터베이스: MariaDB
-- 프론트엔드: React, Vite, Axios
-- AI: OpenAI API 사용
-- 인증: JWT
-- 배포: Docker, EC2
+---
 
-## 프로젝트 구조
-```
-Aidiary/
-├── src/
-│   ├── main/
-│   │   ├── java/org/aidiary/
-│   │   │   ├── controller/
-│   │   │   ├── service/
-│   │   │   ├── entity/
-│   │   │   ├── dto/
-│   │   │   ├── config/
-│   │   └── resources/
-├── docker/
-├── scripts/
-└── README.md
-```
+## 📌 개요
+| 구분 | 내용 |
+| :--- | :--- |
+| **프로젝트명** | Aidiary (AI 다이어리) |
+| **개발 기간** | **2025.04 ~ 2025.06** |
+| **개발 형태** | 개인 프로젝트 |
+| **주요 기술** | Spring Boot, React, MariaDB, Docker, AWS, OpenAI API |
 
-## API 명세
-- `/api/v1/auth/register`: 회원가입
-- `/api/v1/auth/login`: 로그인
-- `/api/v1/user/info`: 사용자 정보 조회
-- `/api/v1/user/update`: 사용자 정보 수정
-- `/api/v1/user/delete`: 회원 탈퇴
-- `/api/v1/file/upload`: 파일 업로드
+---
 
-## 실행 방법
-1. Docker Compose로 서버 실행
-2. Postman으로 API 테스트
+## 🌟 주요 기능
+- **회원 관리**
+  - 회원가입 및 로그인 (JWT 인증)
+  - 사용자 정보 조회, 수정, 삭제 (CRUD)
 
-## 환경 변수 설정
-애플리케이션은 데이터베이스 접속 정보를 환경 변수에서 읽어옵니다. 루트
-경로에 `.env` 파일을 생성하여 다음 값을 지정할 수 있습니다.
+- **감정 기반 일기**
+  - 텍스트 기반 일기 작성
+  - 감정 분석 및 감정 그래프 시각화
+  - 감정 상태에 맞춘 AI 피드백 제공
 
-```
-DB_URL=jdbc:mariadb://localhost:3306/aidiary
-DB_USERNAME=root
-DB_PASSWORD=root
-```
+- **AI 캐릭터 생성**
+  - 부모 얼굴 이미지 기반의 아기 캐릭터 생성
+  - 캐릭터와 정서적 교감 (간단한 대화, 반응)
 
-값을 지정하지 않으면 위의 기본값을 사용합니다.
+- **파일 업로드**
+  - 얼굴 이미지 업로드
 
+- **배포 및 운영**
+  - Docker + AWS EC2를 이용한 컨테이너 기반 배포
+
+---
+
+
+## 🛠️ 기술 스택
+
+### Tech Stack
+- **Backend**: Java, Spring Boot, Spring Security, JPA, Hibernate  
+- **Frontend**: React, Vite, Axios  
+- **Database**: MariaDB  
+- **AI**: OpenAI API  
+- **Infra**: AWS (EC2, S3, ALB), Docker
+
+---
+
+## 💡 기술적 과제 및 해결 노력
+
+### 1. 감정 분석 성능
+- **문제점**: 단순 키워드 매칭 기반 분석은 감정 뉘앙스를 제대로 반영하지 못함  
+- **해결방안**: OpenAI API를 활용해 맥락 기반 감정 분류를 적용하고, 사용자 맞춤형 피드백 생성  
+
+### 2. 인증과 보안
+- **문제점**: 단순 세션 기반 인증은 API 확장성과 모바일 연동에 한계  
+- **해결방안**: JWT 기반 인증을 도입해, 모바일·웹·WebSocket 통신에서 일관된 인증 체계 유지  
+ 
+
+---
+
+## 🙋‍♂️ 개인 기여 (My Contributions)
+- **Backend 개발**: Spring Boot 기반 API 서버 구축 (회원, 일기, 감정분석, 캐릭터 생성 API)  
+- **Frontend 개발**: React 기반 UI 개발 (일기 작성, 감정 시각화, 캐릭터 인터랙션)  
+- **AI 연동**: OpenAI API 통합 및 파이프라인 설계  
