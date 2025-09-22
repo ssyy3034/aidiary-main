@@ -44,7 +44,7 @@
 
 ### Tech Stack
 - **Backend**: Python, Flask, Java, Spring Boot, Spring Security, JPA, Hibernate  
-- **Frontend**: React, Vite, Axios  
+- **Frontend**: React, Typescript, Tailwind, Axios  
 - **Database**: MariaDB  
 - **AI**: OpenAI API  
 - **Infra**: AWS (EC2, S3, ALB), Docker
