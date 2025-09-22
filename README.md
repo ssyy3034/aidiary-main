@@ -13,7 +13,7 @@
 | **프로젝트명** | Aidiary (AI 다이어리) |
 | **개발 기간** | **2025.04 ~ 2025.06** |
 | **개발 형태** | 팀 프로젝트 |
-| **주요 기술** | Spring Boot, React, MariaDB, Docker, AWS, OpenAI API |
+| **주요 기술** | Spring Boot, React, Flask, MariaDB, Docker, AWS, OpenAI API |
 
 ---
 
@@ -43,7 +43,7 @@
 ## 🛠️ 기술 스택
 
 ### Tech Stack
-- **Backend**: Java, Spring Boot, Spring Security, JPA, Hibernate  
+- **Backend**: Python, Flask, Java, Spring Boot, Spring Security, JPA, Hibernate  
 - **Frontend**: React, Vite, Axios  
 - **Database**: MariaDB  
 - **AI**: OpenAI API  
