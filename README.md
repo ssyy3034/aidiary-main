@@ -65,6 +65,6 @@
 ---
 
 ## 🙋‍♂️ 개인 기여 (My Contributions)
-- **Backend 개발**: Spring Boot 기반 API 서버 구축 (회원, 일기, 감정분석, 캐릭터 생성 API)  
+- **Backend 개발**: Spring Boot 기반 API 서버 구축 (회원가입 및 일기 CRUD) 
 - **Frontend 개발**: React 기반 UI 개발 (일기 작성, 감정 시각화, 캐릭터 인터랙션)  
-- **AI 연동**: OpenAI API 통합 및 파이프라인 설계  
+- **AI 연동**: OpenAI API 통합 및 파이프라인 설계
