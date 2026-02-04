@@ -51,3 +51,12 @@ out/
 /aidiary/.env
 
 .env
+
+# Ignore
+.DS_Store
+__pycache__/
+*.pyc
+venv/
+faceapi/venv/
+node_modules/
+docs/
