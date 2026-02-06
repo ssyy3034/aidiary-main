@@ -1,6 +1,7 @@
 package org.aidiary.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,7 +14,8 @@ import java.nio.file.Paths;
 @RequiredArgsConstructor
 public class FileService {
 
-    private final String uploadDir = "/uploads/";
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     public String saveFile(MultipartFile file) throws IOException {
         Path uploadPath = Paths.get(uploadDir);

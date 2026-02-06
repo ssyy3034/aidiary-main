@@ -6,9 +6,9 @@ import org.aidiary.dto.request.SignUpRequest;
 import org.aidiary.dto.response.AuthResponse;
 import org.aidiary.entity.Role;
 import org.aidiary.entity.User;
+import org.aidiary.exception.ResourceNotFoundException;
 import org.aidiary.repository.UserRepository;
 import org.aidiary.security.JwtTokenProvider;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,66 +19,73 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final AuthenticationManager authenticationManagerBean;
+        private final UserRepository userRepository;
+        private final PasswordEncoder passwordEncoder;
+        private final JwtTokenProvider jwtTokenProvider;
 
-    @Transactional
-    public AuthResponse signUp(SignUpRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("이미 존재하는 사용자 이름입니다.");
+        @Transactional
+        public AuthResponse signUp(SignUpRequest request) {
+                if (userRepository.existsByUsername(request.getUsername())) {
+                        throw new RuntimeException("이미 존재하는 사용자 이름입니다.");
+                }
+
+                if (userRepository.existsByEmail(request.getEmail())) {
+                        throw new RuntimeException("이미 존재하는 이메일입니다.");
+                }
+
+                User user = User.builder()
+                                .username(request.getUsername())
+                                .password(passwordEncoder.encode(request.getPassword()))
+                                .email(request.getEmail())
+                                .phone(request.getPhone())
+                                .name(request.getUsername())
+                                .role(Role.USER)
+                                .build();
+
+                User savedUser = userRepository.save(user);
+
+                // 🔐 로그인과 동일한 방식으로 Authentication 생성
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                                savedUser.getUsername(),
+                                null,
+                                savedUser.getAuthorities() // UserDetails 구현 필요
+                );
+
+                String token = jwtTokenProvider.createToken(authentication, savedUser.getId());
+
+                return AuthResponse.builder()
+                                .id(savedUser.getId())
+                                .token(token)
+                                .username(savedUser.getUsername())
+                                .email(savedUser.getEmail())
+                                .role(savedUser.getRole().name())
+                                .build();
         }
 
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("이미 존재하는 이메일입니다.");
+        public AuthResponse login(LoginRequest request) {
+                // 1. 사용자 조회 (보안을 위해 예외 메시지 통일)
+                User user = userRepository.findByUsername(request.getUsername())
+                                .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다."));
+
+                // 2. 비밀번호 검증
+                if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                        throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
+                }
+
+                // 3. 토큰 생성 (인증 객체 직접 생성)
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                                user.getUsername(),
+                                null,
+                                user.getAuthorities());
+
+                String token = jwtTokenProvider.createToken(authentication, user.getId());
+
+                return AuthResponse.builder()
+                                .id(user.getId())
+                                .token(token)
+                                .username(user.getUsername())
+                                .email(user.getEmail())
+                                .role(user.getRole().name())
+                                .build();
         }
-
-        User user = User.builder()
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .email(request.getEmail())
-                .phone(request.getPhone())
-                .name(request.getUsername())
-                .role(Role.USER)
-                .build();
-
-        User savedUser = userRepository.save(user);
-
-        // 🔐 로그인과 동일한 방식으로 Authentication 생성
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                savedUser.getUsername(),
-                null,
-                savedUser.getAuthorities() // UserDetails 구현 필요
-        );
-
-        String token = jwtTokenProvider.createToken(authentication, savedUser.getId());
-
-        return AuthResponse.builder()
-                .id(savedUser.getId())
-                .token(token)
-                .username(savedUser.getUsername())
-                .email(savedUser.getEmail())
-                .role(savedUser.getRole().name())
-                .build();
-    }
-
-    public AuthResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManagerBean.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
-
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-
-        String token = jwtTokenProvider.createToken(authentication, user.getId());
-
-        return AuthResponse.builder()
-                .id(user.getId())
-                .token(token)
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole().name())
-                .build();
-    }
 }

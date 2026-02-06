@@ -6,6 +6,7 @@ import org.aidiary.dto.CreateDiaryDTO;
 import org.aidiary.dto.response.DiaryResponseDTO;
 import org.aidiary.entity.Diary;
 import org.aidiary.entity.User;
+import org.aidiary.exception.ResourceNotFoundException;
 import org.aidiary.repository.DiaryRepository;
 import org.aidiary.repository.UserRepository;
 import org.springframework.data.domain.Page;
@@ -29,7 +30,7 @@ public class DiaryService {
     @Transactional
     public DiaryResponseDTO createDiary(CreateDiaryDTO dto, Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
         Diary diary = Diary.builder()
                 .title(dto.getTitle())
@@ -44,9 +45,14 @@ public class DiaryService {
     }
 
     @Transactional
-    public DiaryResponseDTO updateDiary(Long id, CreateDiaryDTO dto) {
+    public DiaryResponseDTO updateDiary(Long id, CreateDiaryDTO dto, Long userId) {
         Diary diary = diaryRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("일기를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResourceNotFoundException("Diary", id));
+
+        // 소유자 검증: 본인의 일기만 수정 가능
+        if (!diary.getUser().getId().equals(userId)) {
+            throw new SecurityException("본인의 일기만 수정할 수 있습니다.");
+        }
 
         diary.setTitle(dto.getTitle());
         diary.setContent(dto.getContent());
@@ -55,19 +61,16 @@ public class DiaryService {
         return DiaryResponseDTO.fromEntity(diary); // JPA flush로 자동 반영됨
     }
 
-
-    public List<DiaryResponseDTO> getAllDiaries() {
-        return diaryRepository.findAll().stream()
-                .map(DiaryResponseDTO::fromEntity)
-                .distinct() // 중복 제거
-                .collect(Collectors.toList());
-    }
-
     @Transactional
-    public void deleteDiary(Long id) {
-        if (!diaryRepository.existsById(id)) {
-            throw new IllegalArgumentException("삭제할 일기가 존재하지 않습니다.");
+    public void deleteDiary(Long id, Long userId) {
+        Diary diary = diaryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Diary", id));
+
+        // 소유자 검증: 본인의 일기만 삭제 가능
+        if (!diary.getUser().getId().equals(userId)) {
+            throw new SecurityException("본인의 일기만 삭제할 수 있습니다.");
         }
+
         diaryRepository.deleteById(id);
     }
 

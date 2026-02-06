@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aidiary.dto.ChildDTO;
 import org.aidiary.entity.Child;
 import org.aidiary.entity.User;
+import org.aidiary.mapper.ChildMapper;
 import org.aidiary.repository.ChildRepository;
 import org.aidiary.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class ChildService {
 
     private final ChildRepository childRepository;
     private final UserRepository userRepository;
+    private final ChildMapper childMapper;
 
     @Transactional
     public ChildDTO saveChildData(ChildDTO childDto) {
@@ -31,19 +33,19 @@ public class ChildService {
         log.debug("✅ [ChildService] User 조회 성공: {}", user.getUsername());
 
         Child child = childRepository.findById(user.getId())
-                .orElseGet(() -> createNewChild(user));
+                .orElseGet(() -> childMapper.createEntity(user));
 
-        updateChildFields(child, childDto);
+        childMapper.updateEntity(child, childDto);
 
         Child saved = childRepository.save(child);
         log.debug("💾 [ChildService] Child 저장 또는 수정 완료");
 
-        return convertToDto(saved);
+        return childMapper.toDto(saved);
     }
 
     public Optional<ChildDTO> getChildByUserId(Long id) {
         return childRepository.findById(id)
-                .map(this::convertToDto);
+                .map(childMapper::toDto);
     }
 
     private void validateInput(ChildDTO dto) {
@@ -53,35 +55,5 @@ public class ChildService {
         if (dto.getCharacterImage() == null || dto.getCharacterImage().isEmpty()) {
             throw new IllegalArgumentException("characterImage는 필수입니다.");
         }
-    }
-
-    private Child createNewChild(User user) {
-        Child child = new Child();
-        child.setUser(user); // @MapsId를 위한 설정
-        return child;
-    }
-
-    private void updateChildFields(Child child, ChildDTO dto) {
-        child.setParent1Features(dto.getParent1Features());
-        child.setParent2Features(dto.getParent2Features());
-        child.setPrompt(dto.getPrompt());
-        child.setGptResponse(dto.getGptResponse());
-        child.setCharacterImage(dto.getCharacterImage());
-        child.setChildName(dto.getChildName());
-        child.setChildBirthday(dto.getChildBirthday());
-    }
-
-    private ChildDTO convertToDto(Child entity) {
-        return ChildDTO.builder()
-                .id(entity.getId())
-                .userId(entity.getUser().getId())
-                .parent1Features(entity.getParent1Features())
-                .parent2Features(entity.getParent2Features())
-                .prompt(entity.getPrompt())
-                .gptResponse(entity.getGptResponse())
-                .characterImage(entity.getCharacterImage())
-                .childName(entity.getChildName())
-                .childBirthday(entity.getChildBirthday())
-                .build();
     }
 }

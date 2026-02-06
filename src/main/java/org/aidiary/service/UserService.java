@@ -6,12 +6,12 @@ import org.aidiary.dto.ChildUpdateDTO;
 import org.aidiary.dto.UpdateProfileDTO;
 import org.aidiary.entity.Child;
 import org.aidiary.entity.User;
+import org.aidiary.exception.ResourceNotFoundException;
 import org.aidiary.repository.ChildRepository;
 import org.aidiary.repository.UserRepository;
 import org.aidiary.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +32,7 @@ public class UserService {
     public void updateProfile(String token, UpdateProfileDTO dto) {
         String username = jwtTokenProvider.getUsernameFromToken(token);
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResourceNotFoundException("User", username));
 
         // ✨ 선택적 phone 업데이트
         if (dto.getPhone() != null) {
@@ -46,9 +46,12 @@ public class UserService {
             Child child = existingChild.orElse(new Child());
 
             // 부분 업데이트
-            if (childDto.getChildName() != null) child.setChildName(childDto.getChildName());
-            if (childDto.getChildBirthday() != null) child.setChildBirthday(childDto.getChildBirthday());
-            if (childDto.getGptResponse() != null) child.setGptResponse(childDto.getGptResponse());
+            if (childDto.getChildName() != null)
+                child.setChildName(childDto.getChildName());
+            if (childDto.getChildBirthday() != null)
+                child.setChildBirthday(childDto.getChildBirthday());
+            if (childDto.getGptResponse() != null)
+                child.setGptResponse(childDto.getGptResponse());
 
             // 새로 만든 경우를 대비해 user 설정
             child.setUser(user);
@@ -84,7 +87,7 @@ public class UserService {
     @Transactional
     public void deleteUser(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
         userRepository.delete(user);
     }
 

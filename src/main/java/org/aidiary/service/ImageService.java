@@ -1,58 +1,64 @@
 package org.aidiary.service;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 @Service
+@RequiredArgsConstructor
 public class ImageService {
 
-    private final String FLASK_API_URL = "http://aidiary-main-face-api-1:5001/analyze";
+    @Value("${api.flask.url}")
+    private String flaskApiUrl;
+
+    private final RestTemplate restTemplate = new RestTemplate();
 
     public String sendImages(MultipartFile parent1, MultipartFile parent2) throws IOException {
-        File parent1File = convertToFile(parent1, "parent1.jpg");
-        File parent2File = convertToFile(parent2, "parent2.jpg");
+        String url = flaskApiUrl + "/analyze";
 
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
-            HttpPost post = new HttpPost(FLASK_API_URL);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-            builder.addBinaryBody("parent1", parent1File);
-            builder.addBinaryBody("parent2", parent2File);
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("parent1", new FileSystemResource(parent1.getOriginalFilename(), parent1.getBytes()));
+        body.add("parent2", new FileSystemResource(parent2.getOriginalFilename(), parent2.getBytes()));
 
-            HttpEntity entity = builder.build();
-            post.setEntity(entity);
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
-            try (CloseableHttpResponse response = client.execute(post)) {
-                int statusCode = response.getStatusLine().getStatusCode();
-                if (statusCode == 200) {
-                    return EntityUtils.toString(response.getEntity());
-                } else {
-                    return "Error: " + statusCode;
-                }
-            }
+        ResponseEntity<String> response = restTemplate.postForEntity(url, requestEntity, String.class);
 
-        } finally {
-            parent1File.delete();
-            parent2File.delete();
+        if (response.getStatusCode().is2xxSuccessful()) {
+            return response.getBody();
+        } else {
+            return "Error: " + response.getStatusCodeValue();
         }
     }
 
-    private File convertToFile(MultipartFile file, String fileName) throws IOException {
-        File convFile = new File(System.getProperty("java.io.tmpdir") + "/" + fileName);
-        try (FileOutputStream fos = new FileOutputStream(convFile)) {
-            fos.write(file.getBytes());
+    /**
+     * MultipartFile을 전송하기 위한 Helper Class
+     */
+    static class FileSystemResource extends ByteArrayResource {
+        private final String fileName;
+
+        public FileSystemResource(String fileName, byte[] byteArray) {
+            super(byteArray);
+            this.fileName = fileName;
         }
-        return convFile;
+
+        @Override
+        public String getFilename() {
+            return fileName;
+        }
     }
 }

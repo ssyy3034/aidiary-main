@@ -48,7 +48,6 @@ public class User implements UserDetails {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Child child;
 
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.name()));
@@ -82,14 +81,6 @@ public class User implements UserDetails {
                 ", email='" + email + '\'' +
                 ", role=" + role +
                 '}';
-    }
-    @Builder
-    public User(String username, String password, String email, String phone, String name) {
-        this.username = username;
-        this.password = password;
-        this.email = email;
-        this.phone = phone;
-        this.name = name;
     }
 
 }
