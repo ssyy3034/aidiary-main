@@ -31,7 +31,11 @@ logging:
     root: INFO
     org.aidiary: DEBUG
   file:
-    name: /var/log/aidiary/aidiary.log  # Docker 환경을 고려한 경로
+    name: /var/log/aidiary/aidiary.log # Docker 환경을 고려한 경로
 
 file:
-  upload-dir: /uploads/  # Docker에서 볼륨 경로 매핑 필요
+  upload-dir: /uploads/ # Docker에서 볼륨 경로 매핑 필요
+
+api:
+  flask:
+    url: http://face-api:5001
