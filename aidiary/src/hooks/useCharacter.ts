@@ -1,0 +1,230 @@
+import { useState, useEffect, useCallback } from "react";
+import axios from "axios";
+import { childApi, chatApi } from "../api/client";
+import { useAuthStore } from "../stores";
+import type { CharacterData, ChatMessage } from "../types";
+import { createImageCompressionWorker } from "../utils/workerFactory";
+
+const FACE_API_URL =
+  process.env.REACT_APP_FACE_API_URL || "http://localhost:5001";
+
+interface UseCharacterReturn {
+  // 상태
+  characterData: CharacterData | null;
+  generatedImage: string | null;
+  isLoading: boolean;
+  status: string;
+  messages: ChatMessage[];
+
+  // 입력 상태
+  childName: string;
+  childBirthday: string;
+  setChildName: (name: string) => void;
+  setChildBirthday: (date: string) => void;
+
+  // 액션
+  generateCharacter: (
+    parent1File: File,
+    parent2File: File,
+    personality: string,
+  ) => Promise<CharacterData | null>;
+  sendMessage: (content: string) => Promise<void>;
+  setStatus: (status: string) => void;
+}
+
+/**
+ * 캐릭터 관련 비즈니스 로직을 캡슐화하는 커스텀 훅
+ * Refactored: 상태 관리를 useAuthStore로 위임하여 Single Source of Truth 원칙 준수
+ */
+export const useCharacter = (
+  onCharacterCreated: (data: CharacterData) => Promise<void>,
+): UseCharacterReturn => {
+  // Global Store State
+  const { characterData, setCharacter } = useAuthStore();
+
+  // Local UI State
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  // Form State
+  const [childName, setChildName] = useState("");
+  const [childBirthday, setChildBirthday] = useState("");
+
+  // Blob to Base64 변환
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // Store 데이터 동기화
+  useEffect(() => {
+    if (characterData) {
+      setGeneratedImage(characterData.characterImage);
+      setChildName(characterData.childName);
+      setChildBirthday(characterData.childBirthday);
+    }
+  }, [characterData]);
+
+  // 캐릭터 생성
+  const generateCharacter = useCallback(
+    async (
+      parent1File: File,
+      parent2File: File,
+      personality: string,
+    ): Promise<CharacterData | null> => {
+      if (!childName || !childBirthday) {
+        setStatus("아이 정보를 입력해주세요.");
+        return null;
+      }
+
+      // ===== 🚀 Performance Optimization (Web Worker) =====
+      // 이미지를 백그라운드 스레드에서 압축하여 UI Freezing을 방지합니다.
+      const compressImage = (file: File): Promise<Blob> => {
+        return new Promise((resolve, reject) => {
+          // Web Worker 인스턴스 생성 (Factory 사용)
+          const worker = createImageCompressionWorker();
+
+          worker.onmessage = (e) => {
+            if (e.data.success) {
+              resolve(e.data.blob);
+            } else {
+              reject(new Error(e.data.error || "Image compression failed"));
+            }
+            worker.terminate(); // 작업 완료 후 워커 정리
+          };
+
+          worker.onerror = (err) => {
+            reject(new Error(err.message || "Worker error occurred"));
+            worker.terminate();
+          };
+
+          // 워커에 작업 지시 (1024px로 리사이징, 퀄리티 0.8)
+          worker.postMessage({ file, quality: 0.8, maxWidth: 1024 });
+        });
+      };
+
+      try {
+        setStatus("이미지 최적화 중... (백그라운드 처리)");
+
+        // 병렬로 두 이미지 압축 시작
+        const [compressedParent1, compressedParent2] = await Promise.all([
+          compressImage(parent1File),
+          compressImage(parent2File),
+        ]);
+
+        setStatus("분석 중... (최적화된 이미지 전송)");
+        setIsLoading(true);
+        setGeneratedImage(null);
+
+        const formData = new FormData();
+        // 원본 대신 압축된 Blob 전송
+        formData.append("parent1", compressedParent1, parent1File.name);
+        formData.append("parent2", compressedParent2, parent2File.name);
+
+        const response = await axios.post(`${FACE_API_URL}/analyze`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          responseType: "blob",
+        });
+
+        const imageUrl = URL.createObjectURL(response.data);
+        const base64Image = await blobToBase64(response.data);
+        setGeneratedImage(imageUrl);
+        setStatus("캐릭터 생성 성공!");
+
+        // ... (이후 로직은 동일)
+
+        const newCharacter: CharacterData = {
+          childName,
+          childBirthday,
+          parent1Features: "",
+          parent2Features: "",
+          prompt: "",
+          gptResponse: personality || "",
+          characterImage: base64Image,
+        };
+
+        // DB 저장 (Parent Component 위임)
+        await onCharacterCreated(newCharacter);
+
+        // Store 업데이트 (낙관적 업데이트)
+        setCharacter(newCharacter);
+
+        return newCharacter;
+      } catch (error) {
+        console.error("Error:", error);
+        setStatus("서버 연결 실패");
+        return null;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [childName, childBirthday, onCharacterCreated, setCharacter],
+  );
+
+  // 메시지 전송
+  const sendMessage = useCallback(
+    async (content: string) => {
+      if (!content.trim()) return;
+
+      const userMessage: ChatMessage = { sender: "user", content };
+      setMessages((prev) => [...prev, userMessage]);
+
+      try {
+        const lastAiMessage = messages.filter((m) => m.sender === "ai").pop();
+        const response = await chatApi.send(
+          content,
+          lastAiMessage?.content || "",
+        );
+
+        if (response.data.success) {
+          const aiMessage: ChatMessage = {
+            sender: "ai",
+            content: response.data.response,
+          };
+          setMessages((prev) => [...prev, aiMessage]);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              sender: "ai",
+              content: response.data.error || "AI 응답에 실패했어요.",
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error("채팅 API 호출 실패:", error);
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "ai",
+            content: "AI 응답에 실패했어요. 잠시 후 다시 시도해 주세요.",
+          },
+        ]);
+      }
+    },
+    [messages],
+  );
+
+  return {
+    characterData, // Store State
+    generatedImage,
+    isLoading,
+    status,
+    messages,
+    childName,
+    childBirthday,
+    setChildName,
+    setChildBirthday,
+    generateCharacter,
+    sendMessage,
+    setStatus,
+  };
+};
+
+export default useCharacter;
