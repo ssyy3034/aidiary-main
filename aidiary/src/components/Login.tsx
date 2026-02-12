@@ -1,123 +1,129 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Login.css';
+import { motion } from 'framer-motion';
+import { Sparkles, ArrowRight } from 'lucide-react';
+import FormInput from './common/FormInput';
 
 interface LoginProps {
-    onLogin: (username: string, password: string) => void;
+    onLogin: (username: string, password: string) => Promise<void> | void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onLogin(username, password);
+        setIsLoading(true);
+        try {
+            await onLogin(username, password);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const mainColor = '#fff0e6';
-    const subColor = '#c2675a';
-
     return (
-        <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
-             style={{ backgroundColor: mainColor }}>
-            <div className="max-w-md w-full space-y-8">
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-64 h-64 rounded-full blur-2xl opacity-25"
-                             style={{ backgroundColor: subColor }}></div>
-                    </div>
-                    <div className="relative">
-                        <h2 className="mt-6 text-center text-4xl font-extrabold tracking-tight"
-                            style={{ color: subColor }}>
+        <div className="min-h-screen py-20 px-4 sm:px-6 lg:px-8 flex items-center justify-center bg-paper relative overflow-hidden">
+            {/* Background Decoration - Warm botanical gradients */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                <div className="absolute top-[-15%] left-[-10%] w-[45%] h-[45%] bg-primary/8 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[-10%] right-[-15%] w-[50%] h-[50%] bg-secondary/15 rounded-full blur-[100px]" />
+                <div className="absolute top-[40%] right-[10%] w-[30%] h-[30%] bg-accent/10 rounded-full blur-[80px]" />
+            </div>
+
+            <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, type: "spring" }}
+                className="max-w-md w-full relative z-10"
+            >
+                {/* Book Cover / Invitation Card */}
+                <div className="bg-white/80 backdrop-blur-xl border border-white/50 shadow-card rounded-2xl p-8 sm:p-12 relative overflow-hidden">
+                    {/* Decorative Top Line - Warm gradient */}
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-secondary/40 to-transparent" />
+
+                    <div className="text-center mb-10">
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="inline-flex items-center justify-center p-3 rounded-full bg-paper mb-6 border border-sand"
+                        >
+                            <Sparkles className="w-6 h-6 text-primary" />
+                        </motion.div>
+                        <h2 className="text-3xl font-serif font-bold text-ink mb-3 tracking-tight">
                             Mom's Diary
                         </h2>
-                        <p className="mt-2 text-center text-lg"
-                           style={{ color: subColor }}>
-                            소중한 순간을 기록하세요
+                        <p className="text-ink-light font-serif italic">
+                            "소중한 모든 순간을 기록하세요"
                         </p>
                     </div>
-                </div>
 
-                <div className="backdrop-blur-sm bg-white/40 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
-                     style={{ borderColor: subColor, borderWidth: '1px' }}>
-                    <form className="mt-2 space-y-6" onSubmit={handleSubmit}>
-                        <div className="space-y-4">
-                            <div>
-                                <label htmlFor="username" className="block text-sm font-medium mb-1"
-                                       style={{ color: subColor }}>
-                                    아이디
-                                </label>
-                                <input
-                                    id="username"
-                                    name="username"
-                                    type="text"
-                                    required
-                                    className="appearance-none relative block w-full px-4 py-3 rounded-2xl bg-white/50 backdrop-blur-sm transition-all duration-300"
-                                    style={{
-                                        borderColor: subColor,
-                                        borderWidth: '1px',
-                                        color: subColor
-                                    }}
-                                    placeholder="아이디를 입력해주세요"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="password" className="block text-sm font-medium mb-1"
-                                       style={{ color: subColor }}>
-                                    비밀번호
-                                </label>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    required
-                                    className="appearance-none relative block w-full px-4 py-3 rounded-2xl bg-white/50 backdrop-blur-sm transition-all duration-300"
-                                    style={{
-                                        borderColor: subColor,
-                                        borderWidth: '1px',
-                                        color: subColor
-                                    }}
-                                    placeholder="비밀번호를 입력해주세요"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                            </div>
+                    <form className="space-y-6" onSubmit={handleSubmit}>
+                        <div className="space-y-5">
+                            <FormInput
+                                id="username"
+                                label="아이디"
+                                type="text"
+                                placeholder="아이디를 입력해주세요"
+                                value={username}
+                                onChange={setUsername}
+                                disabled={isLoading}
+                            />
+                            <FormInput
+                                id="password"
+                                label="비밀번호"
+                                type="password"
+                                placeholder="비밀번호를 입력해주세요"
+                                value={password}
+                                onChange={setPassword}
+                                disabled={isLoading}
+                                showPasswordToggle
+                            />
                         </div>
 
-                        <div className="space-y-3">
-                            <button
+                        <div className="space-y-4 pt-4">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 type="submit"
-                                className="primary-button group relative w-full flex justify-center py-3 px-4 text-sm font-semibold rounded-2xl text-white transition-all duration-300 shadow-lg hover:shadow-xl"
-                                style={{ backgroundColor: subColor }}
+                                disabled={isLoading}
+                                className="w-full flex justify-center py-3.5 px-4 text-[15px] font-medium rounded-xl text-white bg-primary hover:bg-primary-dark transition-all duration-300 shadow-soft disabled:opacity-50 disabled:cursor-not-allowed group"
                             >
-                                로그인하기
-                            </button>
+                                {isLoading ? (
+                                    <span className="flex items-center gap-2">
+                                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                        </svg>
+                                        로그인 중...
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-2">
+                                        다이어리 펼치기
+                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                    </span>
+                                )}
+                            </motion.button>
 
                             <button
                                 type="button"
                                 onClick={() => navigate('/register')}
-                                className="secondary-button w-full flex justify-center py-3 px-4 text-sm font-semibold rounded-2xl transition-all duration-300"
-                                style={{
-                                    backgroundColor: 'rgba(194, 103, 90, 0.1)',
-                                    color: subColor
-                                }}
+                                disabled={isLoading}
+                                className="w-full flex justify-center py-3.5 px-4 text-[15px] font-medium rounded-xl text-ink-light hover:text-primary hover:bg-primary/5 transition-all duration-300"
                             >
-                                새로운 마음 만들기
+                                아직 계정이 없으신가요? 회원가입
                             </button>
                         </div>
                     </form>
                 </div>
 
-
-                <div className="text-center text-xs mt-4" style={{ color: subColor }}>
-                    <p>함께하는 임신과 출산의 여정</p>
-                    <p>당신의 모든 순간을 소중히 기록합니다</p>
-                </div>
-            </div>
+                <p className="text-center text-xs text-ink-light/60 mt-8 font-serif">
+                     © 2024 AI 산모 일기. All memories secured.
+                </p>
+            </motion.div>
         </div>
     );
 };
