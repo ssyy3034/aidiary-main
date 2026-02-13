@@ -1,16 +1,15 @@
+```
 import React, { useState } from 'react';
 import {
     Box,
-    Button,
     Typography,
     Divider,
-    Paper,
     CircularProgress
 } from '@mui/material';
 import PersonalityTest from './PersonalityTest';
-import axios from 'axios';
-import { usePersonality } from './PersonalityContext';
-import { useNavigate } from 'react-router-dom';
+import { usePersonalityGenerator } from '../hooks/usePersonalityGenerator';
+import CommonButton from './common/CommonButton';
+import GlassCard from './common/GlassCard';
 
 interface CharacterPersonalityBuilderProps {
     onPersonalityGenerated: (summary: string) => void;
@@ -19,77 +18,28 @@ interface CharacterPersonalityBuilderProps {
 const mainColor = '#fff0e6';
 const subColor = '#c2675a';
 
-// 마크다운 블록 내부 추출
-const extractMarkdownContent = (text: string): string => {
-    const match = text.match(/```markdown([\s\S]*?)```/i);
-    return match ? match[1].trim() : text;
-};
-
-// 마크다운 섹션별 필드 추출
-const getField = (field: string, markdown: string): string => {
-    const emojiMap: Record<string, string> = {
-        '유전적 성격 경향': '🧬',
-        '성격 키워드': '✨',
-        '간단한 성격 설명': '🧠'
-    };
-    const emoji = emojiMap[field] ?? '';
-    const pattern = `##\\s*${emoji}\\s*${field}\\s*[\\n\\r]+([\\s\\S]*?)(?=\\n##|$)`;
-    const regex = new RegExp(pattern, 'i');
-    const match = markdown.match(regex);
-    return match ? match[1].trim() : '';
-};
-
 const CharacterPersonalityBuilder: React.FC<CharacterPersonalityBuilderProps> = ({ onPersonalityGenerated }) => {
     const [parent1Result, setParent1Result] = useState<string | null>(null);
     const [parent2Result, setParent2Result] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [generatedPersonality, setGeneratedPersonality] = useState<string>('');
-    const { setPersonality } = usePersonality();
-    const navigate = useNavigate(); // ✅ 컴포넌트 안에서 선언
 
-    const handleGenerate = async () => {
-        if (!parent1Result || !parent2Result) return;
+    // Custom Hook 사용
+    const {
+        generatePersonality,
+        loading,
+        generatedPersonality,
+        markdownBody,
+        getField
+    } = usePersonalityGenerator(onPersonalityGenerated);
 
-        setLoading(true);
-        try {
-            const prompt = `다음은 부모 두 사람의 성격 테스트 결과입니다.\n\n부모1:\n${parent1Result}\n\n부모2:\n${parent2Result}\n\n당신은 유전심리학 기반의 성격 분석 전문가입니다. 부모의 성격적 특성과 조합을 바탕으로 가상의 아이 성격을 아래 형식에 맞춰 분석해주세요.\n\n응답은 반드시 아래 마크다운 문법을 따르세요:\n\n\`\`\`markdown\n## 🧬 유전적 성격 경향\n- ...\n## ✨ 성격 키워드\n- 키워드1\n- 키워드2\n- 키워드3\n## 🧠 간단한 성격 설명\n...\n\`\`\``;
-
-            const response = await axios.post(
-                'https://api.openai.com/v1/chat/completions',
-                {
-                    model: 'gpt-3.5-turbo',
-                    messages: [
-                        { role: 'system', content: '당신은 성격 분석 및 조합을 전문으로 하는 AI입니다.' },
-                        { role: 'user', content: prompt }
-                    ]
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            const resultText = response.data.choices[0].message.content;
-            setGeneratedPersonality(resultText);
-            setPersonality(resultText); // 전역 상태 저장
-            onPersonalityGenerated(resultText);
-
-            // ✅ 생성 완료 후 캐릭터 생성 페이지로 이동
-            navigate('/character');
-        } catch (error) {
-            console.error('GPT 요청 실패:', error);
-        } finally {
-            setLoading(false);
+    const handleGenerate = () => {
+        if (parent1Result && parent2Result) {
+            generatePersonality(parent1Result, parent2Result);
         }
     };
 
-    const markdownBody = extractMarkdownContent(generatedPersonality);
-
     return (
         <Box sx={{ backgroundColor: mainColor, minHeight: '100vh', py: 6, px: 2, display: 'flex', justifyContent: 'center' }}>
-            <Paper elevation={3} sx={{ maxWidth: 800, width: '100%', p: 4, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(12px)', border: `1px solid ${subColor}`, boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
+            <GlassCard subColor={subColor}>
                 <Typography variant="h5" align="center" fontWeight="bold" gutterBottom sx={{ color: subColor }}>
                     부모 성격을 기반으로 아이 성격 만들기
                 </Typography>
@@ -103,29 +53,14 @@ const CharacterPersonalityBuilder: React.FC<CharacterPersonalityBuilderProps> = 
                 <PersonalityTest parentLabel="부모 2" onSubmit={setParent2Result} />
 
                 <Box sx={{ textAlign: 'center', mt: 4 }}>
-                    <Button
-                        variant="contained"
-                        disabled={!parent1Result || !parent2Result || loading}
+                    <CommonButton
+                        loading={loading}
+                        disabled={!parent1Result || !parent2Result}
                         onClick={handleGenerate}
-                        sx={{
-                            borderRadius: '16px',
-                            px: 4,
-                            py: 1.5,
-                            backgroundColor: subColor,
-                            color: 'white',
-                            fontWeight: 'bold',
-                            '&:hover': { backgroundColor: '#b7554d' }
-                        }}
+                        subColor={subColor}
                     >
-                        {loading ? (
-                            <>
-                                <CircularProgress size={20} sx={{ mr: 1, color: 'white' }} />
-                                분석 중...
-                            </>
-                        ) : (
-                            '아이 성격 생성하기'
-                        )}
-                    </Button>
+                        아이 성격 생성하기
+                    </CommonButton>
                 </Box>
 
                 {generatedPersonality && (
@@ -153,9 +88,11 @@ const CharacterPersonalityBuilder: React.FC<CharacterPersonalityBuilderProps> = 
                         </Typography>
                     </Box>
                 )}
-            </Paper>
+            </GlassCard>
         </Box>
     );
 };
 
+
 export default CharacterPersonalityBuilder;
+```

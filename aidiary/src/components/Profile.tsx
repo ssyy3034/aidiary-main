@@ -1,206 +1,218 @@
-import React, { useState, useEffect } from 'react';
-import {
-    Box,
-    Paper,
-    TextField,
-    Button,
-    Typography,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Avatar,
-    Divider
-} from '@mui/material';
-import {
-    Edit as EditIcon,
-    Delete as DeleteIcon,
-    Person as PersonIcon,
-    Save as SaveIcon,
-    Cancel as CancelIcon
-} from '@mui/icons-material';
-
-interface ChildProfile {
-    childName: string;
-    meetDate: string;
-}
-
-export interface UserProfile {
-    password: string;
-    id: number;
-    username: string;
-    email: string;
-    phone: string;
-    child: ChildProfile;
-}
+import React, { useState, useMemo } from 'react';
+import FormInput from './common/FormInput';
+import './Profile.css';
+import type { UserProfile, ChildInfo } from '../types';
 
 interface ProfileProps {
     userInfo: UserProfile;
-    onUpdateProfile: (profile: UserProfile) => void;
-    onDeleteAccount: () => void;
+    onUpdateProfile: (profile: UserProfile) => Promise<void> | void;
+    onDeleteAccount: () => Promise<void> | void;
 }
 
+const DEFAULT_CHILD: ChildInfo = { childName: '', meetDate: '' };
+
 const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAccount }) => {
-    const defaultChild: ChildProfile = { childName: '', meetDate: '' };
-
-    const [profile, setProfile] = useState<UserProfile>({
-        ...userInfo,
-        child: userInfo.child ?? defaultChild,
-    });
-
-    const [editedProfile, setEditedProfile] = useState<UserProfile>({
-        ...userInfo,
-        child: userInfo.child ?? defaultChild,
-    });
-
-    // userInfo가 변경될 때마다 프로필 상태 업데이트
-    useEffect(() => {
-        setProfile({
-            ...userInfo,
-            child: userInfo.child ?? defaultChild,
-        });
-        setEditedProfile({
-            ...userInfo,
-            child: userInfo.child ?? defaultChild,
-        });
-    }, [userInfo]);
-
+    // 편집 모드 상태
     const [isEditing, setIsEditing] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const mainColor = '#fff0e6';
-    const subColor = '#c2675a';
+    // 편집 중인 프로필 (편집 모드에서만 사용)
+    const [editedProfile, setEditedProfile] = useState<UserProfile>({
+        ...userInfo,
+        child: userInfo.child ?? DEFAULT_CHILD,
+    });
 
-    const textFieldStyle = {
-        '& .MuiOutlinedInput-root': {
-            borderRadius: '16px',
-            backgroundColor: 'rgba(255, 255, 255, 0.5)',
-            '& fieldset': { borderColor: subColor },
-            '&:hover fieldset': { borderColor: subColor },
-            '&.Mui-focused fieldset': { borderColor: subColor }
-        },
-        '& .MuiInputLabel-root': {
-            color: subColor,
-            '&.Mui-focused': { color: subColor }
-        }
-    };
-
+    // 편집 시작
     const handleEdit = () => {
-        setEditedProfile(profile);
+        setEditedProfile({
+            ...userInfo,
+            child: userInfo.child ?? DEFAULT_CHILD,
+        });
         setIsEditing(true);
     };
 
-    const handleSave = () => {
-        const updatedProfile = {
-            ...editedProfile,
-            child: {
-                ...editedProfile.child,
-                meetDate: editedProfile.child.meetDate || ''
-            }
-        };
-        setProfile(updatedProfile);
-        onUpdateProfile(updatedProfile);
-        setIsEditing(false);
+    // 필드 업데이트 헬퍼
+    const updateField = (field: keyof UserProfile) => (value: string) => {
+        setEditedProfile(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleDelete = () => {
-        setShowDeleteConfirm(false);
-        onDeleteAccount();
+    // 저장
+    const handleSave = async () => {
+        setIsLoading(true);
+        try {
+            await onUpdateProfile(editedProfile);
+            setIsEditing(false);
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+    // 삭제
+    const handleDelete = async () => {
+        setIsLoading(true);
+        try {
+            await onDeleteAccount();
+        } finally {
+            setIsLoading(false);
+            setShowDeleteConfirm(false);
+        }
+    };
+
+    // 표시할 정보 (비밀번호 제외!)
+    const displayInfo = useMemo(() => [
+        { label: '이메일', value: userInfo.email },
+        { label: '전화번호', value: userInfo.phone || '-' },
+    ], [userInfo.email, userInfo.phone]);
 
     return (
-        <Box sx={{ p: 3, maxWidth: 800, width: '100%', mx: 'auto', backgroundColor: mainColor, minHeight: '100vh' }}>
-            <Typography variant="h4" sx={{ textAlign: 'center', mb: 4, color: subColor, fontWeight: 'bold' }}>
-                프로필 관리
-            </Typography>
+        <div className="min-h-screen py-6 px-4 bg-paper">
+            <div className="max-w-2xl mx-auto">
+                {/* 헤더 */}
+                <h1 className="text-3xl font-bold text-center mb-6 text-primary font-serif">
+                    프로필 관리
+                </h1>
 
-            <Paper elevation={3} sx={{ p: 4, borderRadius: 2, backgroundColor: '#ffffff', border: `1px solid ${subColor}` }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-                    <Avatar sx={{ width: 80, height: 80, bgcolor: subColor, mr: 3 }}>
-                        <PersonIcon sx={{ fontSize: 40 }} />
-                    </Avatar>
-                    <Box>
-                        <Typography variant="h5" sx={{ color: '#2c3e50', fontWeight: 'bold' }}>{profile.username}</Typography>
-                        <Typography variant="subtitle1" sx={{ color: '#7f8c8d' }}>{profile.email}</Typography>
-                    </Box>
-                </Box>
+                {/* 프로필 카드 */}
+                <div className="bg-white rounded-2xl p-6 shadow-card border border-sand">
+                    {/* 사용자 정보 헤더 */}
+                    <div className="flex items-center mb-6">
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold mr-4 bg-primary">
+                            {userInfo.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-ink">
+                                {userInfo.username}
+                            </h2>
+                            <p className="text-ink-light">{userInfo.email}</p>
+                        </div>
+                    </div>
 
-                <Divider sx={{ mb: 4 }} />
+                    <hr className="mb-6 border-sand" />
 
-                {!isEditing ? (
-                    <Box sx={{ '& > *': { mb: 3 } }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                            <Typography variant="h6" sx={{ color: '#2c3e50' }}>개인정보</Typography>
-                            <Box>
-                                <Button variant="outlined" startIcon={<EditIcon />} onClick={handleEdit}
-                                        sx={{ mr: 2, borderColor: subColor, color: subColor, '&:hover': { borderColor: '#2980b9', backgroundColor: 'rgba(194, 103, 90, 0.1)' } }}>
-                                    수정
-                                </Button>
-                                <Button variant="outlined" startIcon={<DeleteIcon />} onClick={() => setShowDeleteConfirm(true)}
-                                        sx={{ borderColor: '#e74c3c', color: '#e74c3c', '&:hover': { borderColor: '#c0392b', backgroundColor: 'rgba(231, 76, 60, 0.1)' } }}>
-                                    계정 삭제
-                                </Button>
-                            </Box>
-                        </Box>
+                    {/* 보기 모드 */}
+                    {!isEditing ? (
+                        <div>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-semibold text-ink">
+                                    개인정보
+                                </h3>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleEdit}
+                                        className="px-4 py-2 rounded-xl border border-primary text-primary hover:bg-primary/5 transition-colors"
+                                    >
+                                        ✏️ 수정
+                                    </button>
+                                    <button
+                                        onClick={() => setShowDeleteConfirm(true)}
+                                        className="px-4 py-2 rounded-xl border border-error text-error hover:bg-error/5 transition-colors"
+                                    >
+                                        🗑️ 계정 삭제
+                                    </button>
+                                </div>
+                            </div>
 
-                        <Paper sx={{ p: 3, backgroundColor: '#f8f9fa', borderRadius: 2 }}>
-                            {[
-                                { label: '이메일', value: profile.email },
-                                { label: '전화번호', value: profile.phone },
-                                { label: '비밀번호', value:profile.password},
-                            ].map((item, index) => (
-                                <Box key={index} sx={{ display: 'flex', mb: 2, alignItems: 'center' }}>
-                                    <Typography sx={{ width: '30%', color: '#7f8c8d', fontWeight: 'bold' }}>{item.label}</Typography>
-                                    <Typography sx={{ color: '#2c3e50' }}>{item.value}</Typography>
-                                </Box>
-                            ))}
-                        </Paper>
-                    </Box>
-                ) : (
-                    <Box component="form" sx={{ '& .MuiTextField-root': { mb: 3 } }}>
-                        <Typography variant="h6" sx={{ mb: 3, color: subColor }}>정보 수정</Typography>
+                            <div className="bg-paper-dark/50 rounded-xl p-4">
+                                {displayInfo.map((item, index) => (
+                                    <div
+                                        key={index}
+                                        className="flex mb-3 last:mb-0"
+                                    >
+                                        <span className="w-24 text-ink-light font-medium">
+                                            {item.label}
+                                        </span>
+                                        <span className="text-ink">
+                                            {item.value}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        /* 편집 모드 */
+                        <div>
+                            <h3 className="text-lg font-semibold mb-4 text-primary">
+                                정보 수정
+                            </h3>
 
-                        <TextField fullWidth label="이메일" type="email" value={editedProfile.email}
-                                   onChange={(e) => setEditedProfile({ ...editedProfile, email: e.target.value })}
-                                   sx={textFieldStyle} />
-                        <TextField fullWidth label="전화번호" type="tel" value={editedProfile.phone}
-                                   onChange={(e) => setEditedProfile({ ...editedProfile, phone: e.target.value })}
-                                   sx={textFieldStyle} />
-                        
+                            <div className="space-y-4">
+                                <FormInput
+                                    id="email"
+                                    label="이메일"
+                                    type="email"
+                                    placeholder="이메일을 입력하세요"
+                                    value={editedProfile.email}
+                                    onChange={updateField('email')}
+                                    disabled={isLoading}
+                                />
 
+                                <FormInput
+                                    id="phone"
+                                    label="전화번호"
+                                    type="tel"
+                                    placeholder="'-' 없이 숫자만"
+                                    value={editedProfile.phone}
+                                    onChange={updateField('phone')}
+                                    disabled={isLoading}
+                                />
+                            </div>
 
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
-                            <Button variant="outlined" startIcon={<CancelIcon />}
+                            <div className="flex justify-end gap-3 mt-6">
+                                <button
                                     onClick={() => setIsEditing(false)}
-                                    sx={{ borderColor: '#7f8c8d', color: '#7f8c8d', '&:hover': { borderColor: '#95a5a6', backgroundColor: 'rgba(127, 140, 141, 0.1)' } }}>
-                                취소
-                            </Button>
-                            <Button variant="contained" startIcon={<SaveIcon />}
+                                    disabled={isLoading}
+                                    className="px-4 py-2 rounded-xl border border-sand-dark text-ink-light hover:bg-sand/50 transition-colors disabled:opacity-50"
+                                >
+                                    취소
+                                </button>
+                                <button
                                     onClick={handleSave}
-                                    sx={{ backgroundColor: subColor, '&:hover': { backgroundColor: '#b35a4d' } }}>
-                                저장
-                            </Button>
-                        </Box>
-                    </Box>
-                )}
-            </Paper>
+                                    disabled={isLoading}
+                                    className="px-4 py-2 rounded-xl text-white bg-primary hover:bg-primary-dark transition-colors disabled:opacity-50"
+                                >
+                                    {isLoading ? '저장 중...' : '💾 저장'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
-            <Dialog open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}
-                    PaperProps={{ sx: { borderRadius: 2, p: 2 } }}>
-                <DialogTitle sx={{ color: '#e74c3c' }}>계정 삭제 확인</DialogTitle>
-                <DialogContent>
-                    <Typography sx={{ color: '#2c3e50' }}>
-                        정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setShowDeleteConfirm(false)} sx={{ color: '#7f8c8d' }}>취소</Button>
-                    <Button onClick={handleDelete} sx={{ color: '#e74c3c', '&:hover': { backgroundColor: 'rgba(231, 76, 60, 0.1)' } }}>
-                        삭제
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </Box>
+                {/* 삭제 확인 모달 */}
+                {showDeleteConfirm && (
+                    <div className="fixed inset-0 bg-ink-dark/50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-float">
+                            <h3 className="text-xl font-bold text-error mb-4">
+                                ⚠️ 계정 삭제 확인
+                            </h3>
+                            <p className="text-ink-light mb-6">
+                                정말로 계정을 삭제하시겠습니까?
+                                <br />
+                                <strong className="text-error">
+                                    이 작업은 되돌릴 수 없습니다.
+                                </strong>
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                    disabled={isLoading}
+                                    className="px-4 py-2 rounded-xl text-ink-light hover:bg-sand/50 transition-colors"
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    onClick={handleDelete}
+                                    disabled={isLoading}
+                                    className="px-4 py-2 rounded-xl bg-error text-white hover:bg-error/90 transition-colors disabled:opacity-50"
+                                >
+                                    {isLoading ? '삭제 중...' : '🗑️ 삭제'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 };
 
