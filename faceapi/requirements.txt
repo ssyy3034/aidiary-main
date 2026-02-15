@@ -5,3 +5,6 @@ flask-cors
 transformers
 openai
 python-dotenv
+torch
+keybert
+kiwipiepy

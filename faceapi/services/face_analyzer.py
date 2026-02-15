@@ -1,9 +1,10 @@
 import os
 import requests
 from PIL import Image
+from config import Config
 
 API_URL = "https://www.ailabapi.com/api/portrait/analysis/face-analyzer"
-API_KEY = "2en9VSKfYomuuGLUa6I7DOKFpANWURzOg8pbLISJsvvxZkAFqXsCPEyWEiBtwQlt"
+API_KEY = Config.AILAB_API_KEY  # 환경변수에서 API 키 로드
 MAX_SIZE = (2000, 2000)
 
 def resize_image(image_path):

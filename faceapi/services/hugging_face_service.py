@@ -1,7 +1,8 @@
 import requests
 import os
+from config import Config
 
-HUGGING_FACE_TOKEN = os.getenv("HUGGING_FACE_TOKEN")
+HUGGING_FACE_TOKEN = Config.HUGGING_FACE_TOKEN
 class HuggingFaceService:
     def __init__(self):
         self.api_url = "https://api-inference.huggingface.co/models/gpt2"
