@@ -1,15 +1,18 @@
-# Use Eclipse Temurin OpenJDK as base image
-FROM eclipse-temurin:17-jdk
-
-# 작업 디렉토리 설정
+# Multi-stage Dockerfile for Spring Boot application
+# Builder stage using Gradle
+FROM gradle:8.5-jdk17 AS builder
 WORKDIR /app
+# Copy source files
+COPY . .
+# Build the jar (bootJar task)
+RUN ./gradlew bootJar --no-daemon
 
-# 애플리케이션 JAR 복사
-ARG JAR_FILE=build/libs/*.jar
-COPY ${JAR_FILE} app.jar
-
-# 포트 노출
+# Runtime stage using Eclipse Temurin JDK
+FROM eclipse-temurin:17-jdk
+WORKDIR /app
+# Copy the built jar from builder stage
+COPY --from=builder /app/build/libs/*.jar app.jar
+# Expose application port
 EXPOSE 8080
-
-# 애플리케이션 실행
+# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
