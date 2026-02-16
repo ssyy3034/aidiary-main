@@ -5,6 +5,16 @@ flask-cors
 transformers
 openai
 python-dotenv
-torch
 keybert
 kiwipiepy
+google-genai
+mediapipe
+opencv-python-headless
+numpy
+langgraph
+langchain
+langchain-community
+langchain-openai
+chromadb
+sentence-transformers
+beautifulsoup4

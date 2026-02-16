@@ -1,6 +1,4 @@
 from flask import Blueprint, request, jsonify, send_file
-from services.face_analyzer import analyze_face
-from services.feature_extractor import extract_features
 from services.image_generator import ImageGenerator
 from utils.file_utils import save_file
 
@@ -9,20 +7,7 @@ image_generator = ImageGenerator()
 
 @analysis_bp.route('/api/diary-drawing', methods=['POST'])
 def generate_diary_drawing():
-    """
-    일기 텍스트를 분석하여 '태아가 그린 그림일기'를 생성합니다.
-
-    Request Body:
-        { "diary_text": "오늘 아빠랑 딸기 먹어서 너무 행복했어." }
-
-    Response:
-        {
-            "success": true,
-            "image_url": "...",
-            "analysis": { "sentiment": {...}, "keywords": [...] },
-            "prompt": "..."
-        }
-    """
+    """일기 텍스트를 분석하여 '태아가 그린 그림일기'를 생성"""
     try:
         data = request.get_json()
         diary_text = data.get("diary_text", "")
@@ -43,12 +28,7 @@ def generate_diary_drawing():
 
 @analysis_bp.route('/api/analyze-text', methods=['POST'])
 def analyze_text():
-    """
-    일기 텍스트의 감정/키워드만 분석합니다. (이미지 생성 없이 테스트용)
-
-    Request Body:
-        { "text": "오늘 산책하면서 꽃을 봤어" }
-    """
+    """일기 텍스트의 감정/키워드만 분석 (테스트용)"""
     try:
         data = request.get_json()
         text = data.get("text", "")
@@ -74,6 +54,12 @@ def analyze_text():
 
 @analysis_bp.route('/analyze', methods=['POST'])
 def analyze():
+    """
+    부모 이미지 2장 → 유전학 기반 아이 얼굴 예측 파이프라인
+
+    전체 흐름을 image_generator.process_image_generation()에 위임.
+    라우트는 파일 저장 + 에러 처리만 담당.
+    """
     try:
         parent1 = request.files.get('parent1')
         parent2 = request.files.get('parent2')
@@ -81,34 +67,18 @@ def analyze():
         if not parent1 or not parent2:
             return jsonify({"error": "Both parent1 and parent2 images are required"}), 400
 
-        # 보안이 강화된 파일 저장 (고유 파일명 사용)
         try:
             parent1_path = save_file(parent1, "parent1")
             parent2_path = save_file(parent2, "parent2")
         except ValueError as e:
             return jsonify({"error": str(e)}), 400
 
-        # 부모 이미지 분석
-        parent1_data = analyze_face(parent1_path)
-        parent2_data = analyze_face(parent2_path)
-
-        # 에러 처리
-        if "error" in parent1_data:
-            return jsonify({"error": parent1_data["error"]}), 422
-        if "error" in parent2_data:
-            return jsonify({"error": parent2_data["error"]}), 422
-
-        # 필요한 속성만 추출
-        parent1_features = extract_features(parent1_data)
-        parent2_features = extract_features(parent2_data)
-
-        # 이미지 생성
-        result = image_generator.process_image_generation(parent1_features, parent2_features)
+        # 전체 파이프라인을 image_generator에 위임
+        result = image_generator.process_image_generation(parent1_path, parent2_path)
 
         if not result["success"]:
             return jsonify({"error": result["error"]}), 500
 
-        # 생성된 이미지 파일 전송
         return send_file(
             result["image_path"],
             mimetype='image/png',
