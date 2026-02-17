@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
-// Legacy theme support - to be removed after full refactor
 export const THEME_COLORS = {
     main: 'var(--color-main)',
     sub: 'var(--color-sub)',
@@ -22,16 +21,8 @@ interface FormInputProps {
 }
 
 const FormInput: React.FC<FormInputProps> = ({
-    id,
-    label,
-    type,
-    placeholder,
-    value,
-    onChange,
-    required = true,
-    disabled = false,
-    error,
-    showPasswordToggle = false,
+    id, label, type, placeholder, value, onChange,
+    required = true, disabled = false, error, showPasswordToggle = false,
 }) => {
     const [showPassword, setShowPassword] = useState(false);
     const inputType = type === 'password' && showPassword ? 'text' : type;
@@ -40,7 +31,7 @@ const FormInput: React.FC<FormInputProps> = ({
         <div className="w-full">
             <label
                 htmlFor={id}
-                className="block text-sm font-medium mb-1.5 text-ink/80 font-sans"
+                className="block text-[12px] font-bold mb-1.5 text-cocoa-light tracking-wide uppercase font-body"
             >
                 {label}
             </label>
@@ -52,12 +43,12 @@ const FormInput: React.FC<FormInputProps> = ({
                     required={required}
                     disabled={disabled}
                     className={`
-                        w-full px-4 py-3.5 rounded-xl bg-white/50 backdrop-blur-sm
-                        border transition-all duration-200
-                        text-ink placeholder:text-ink-light/50 font-sans
-                        focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+                        w-full px-3.5 py-3 rounded-md bg-linen/60
+                        border transition-all duration-150
+                        text-ink placeholder:text-cocoa-muted/40 font-body text-[14px]
+                        focus:outline-none focus:ring-1 focus:ring-terra/30 focus:border-terra
                         disabled:opacity-50 disabled:cursor-not-allowed
-                        ${error ? 'border-red-500 focus:ring-red-200' : 'border-sand hover:border-sand-dark'}
+                        ${error ? 'border-red-400 focus:ring-red-200' : 'border-linen-deep hover:border-dusty'}
                         ${showPasswordToggle ? 'pr-12' : ''}
                     `}
                     placeholder={placeholder}
@@ -70,20 +61,15 @@ const FormInput: React.FC<FormInputProps> = ({
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg text-ink-light hover:text-ink hover:bg-black/5 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-cocoa-muted hover:text-cocoa transition-colors"
                         aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
                     >
-                        {showPassword ? (
-                            <EyeOff className="w-5 h-5" />
-                        ) : (
-                            <Eye className="w-5 h-5" />
-                        )}
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                 )}
             </div>
             {error && (
-                <p id={`${id}-error`} className="mt-1.5 text-sm text-red-500 font-medium flex items-center gap-1">
-                    <span className="inline-block w-1 h-1 rounded-full bg-red-500" />
+                <p id={`${id}-error`} className="mt-1 text-[12px] text-red-500 font-medium">
                     {error}
                 </p>
             )}

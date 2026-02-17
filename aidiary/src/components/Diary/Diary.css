@@ -1,44 +1,14 @@
-/* Diary 컴포넌트 전용 스타일 */
+/* Diary component styles */
 
-/* 페이지네이션 버튼 - Now using Tailwind classes in component */
-.pagination-button {
-    @apply px-4 py-2 rounded-xl border border-primary text-primary bg-white font-medium transition-all duration-200;
-}
-
-.pagination-button:hover:not(:disabled) {
-    @apply bg-primary/5;
-}
-
-.pagination-button:disabled {
-    @apply opacity-50 cursor-not-allowed;
-}
-
-/* 카드 그리드 */
 .diary-grid {
-    @apply flex flex-col gap-4;
+    @apply flex flex-col gap-5;
 }
 
-/* 애니메이션 */
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .diary-card-enter {
     animation: fadeIn 0.3s ease-out;
-}
-
-/* 빈 상태 스타일 */
-.empty-state {
-    @apply text-center py-12 px-6 text-ink-light;
-}
-
-.empty-state-icon {
-    @apply text-5xl mb-4;
 }

@@ -2,46 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Font Imports - Adding Crimson Text for a more literary feel */
-@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Nunito:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700;900&display=swap');
 
 @layer base {
   body {
-    @apply bg-paper text-ink font-sans antialiased;
-    /* Subtle paper grain texture with warm olive undertones */
+    @apply bg-linen text-cocoa font-body antialiased;
+    /* Subtle paper grain - not blurred gradient circles */
     background-image:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%235C6B4D' fill-opacity='0.015' d='M1 3h1v1H1V3zm2-2h1v1H3V1z'%3E%3C/path%3E%3C/svg%3E"),
-      linear-gradient(135deg, rgba(92, 107, 77, 0.02) 0%, transparent 50%, rgba(166, 123, 91, 0.02) 100%);
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif text-ink tracking-tight font-medium;
+    @apply font-display text-ink;
   }
 
-  /* Selection color matching the theme */
   ::selection {
-    background-color: rgba(92, 107, 77, 0.2);
-    color: #3D352E;
+    background-color: rgba(198, 125, 91, 0.2);
+    color: #3D2E24;
   }
 
-  /* Scrollbar styling for webkit browsers */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: #FAF6F0;
-  }
-
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: #D4C8B8;
-    border-radius: 4px;
+    background: #D4A088;
+    border-radius: 99px;
   }
+}
 
-  ::-webkit-scrollbar-thumb:hover {
-    background: #C9A961;
-  }
+/* Notebook lined paper effect */
+.notebook-lines {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 31px,
+    rgba(198, 125, 91, 0.08) 31px,
+    rgba(198, 125, 91, 0.08) 32px
+  );
+  background-position-y: 8px;
+}
+
+/* Washi tape decoration */
+.washi-tape {
+  position: relative;
+}
+.washi-tape::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1deg);
+  width: 80px;
+  height: 12px;
+  background: linear-gradient(90deg, rgba(198, 125, 91, 0.15), rgba(198, 125, 91, 0.25), rgba(198, 125, 91, 0.15));
+  border-radius: 1px;
+}
+
+/* Stamp-style badge */
+.stamp {
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+  display: inline-block;
+}
+
+/* Torn paper edge */
+.torn-bottom {
+  position: relative;
+}
+.torn-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(135deg, #F7F3ED 33.33%, transparent 33.33%) -12px 0,
+    linear-gradient(225deg, #F7F3ED 33.33%, transparent 33.33%) -12px 0,
+    linear-gradient(315deg, #F7F3ED 33.33%, transparent 33.33%),
+    linear-gradient(45deg, #F7F3ED 33.33%, transparent 33.33%);
+  background-size: 12px 8px;
+}
+
+/* Scallop border */
+.scallop-top {
+  border-top: none;
+  position: relative;
+}
+.scallop-top::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: radial-gradient(circle at 6px 6px, transparent 5px, white 5px, white 6px, transparent 6px);
+  background-size: 12px 6px;
 }
 
 @layer utilities {

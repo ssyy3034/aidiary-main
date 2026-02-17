@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import FormInput from './common/FormInput';
 import useFormValidation, { FormData, initialFormData } from '../hooks/useFormValidation';
 
@@ -22,7 +22,6 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isValid) return;
-
         setIsLoading(true);
         try {
             await onRegister(form.username, form.password, form.email, form.phone);
@@ -32,131 +31,79 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
     };
 
     return (
-        <div className="min-h-screen py-20 px-4 sm:px-6 lg:px-8 flex items-center justify-center bg-paper relative overflow-hidden">
-             {/* Background Decoration - Warm botanical gradients */}
-             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                <div className="absolute top-[-15%] left-[-10%] w-[45%] h-[45%] bg-primary/8 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[-10%] right-[-15%] w-[50%] h-[50%] bg-secondary/15 rounded-full blur-[100px]" />
-                <div className="absolute top-[40%] right-[10%] w-[30%] h-[30%] bg-accent/10 rounded-full blur-[80px]" />
-            </div>
-
+        <div className="min-h-screen flex items-center justify-center px-5 bg-linen py-12">
             <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, type: "spring" }}
-                className="max-w-md w-full relative z-10"
+                transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="w-full max-w-sm"
             >
-                <div className="bg-white/80 backdrop-blur-xl border border-white/50 shadow-card rounded-2xl p-8 sm:p-10 relative overflow-hidden">
-                    {/* Decorative Top Line - Warm gradient */}
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-secondary/40 to-transparent" />
+                <div className="bg-white border border-linen-deep rounded-lg shadow-paper p-7 relative">
+                    <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-terra/0 via-terra/40 to-terra/0 rounded-t-lg" />
 
-                    <div className="text-center mb-8">
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => navigate('/')}
-                            className="absolute top-8 left-8 p-1 rounded-full text-ink-light hover:bg-black/5 transition-colors"
+                    <div className="mb-7">
+                        <button
+                            onClick={() => navigate('/login')}
+                            className="mb-4 p-1 -ml-1 text-cocoa-muted hover:text-terra transition-colors"
                         >
                             <ArrowLeft className="w-5 h-5" />
-                        </motion.button>
-
-                        <div className="inline-flex items-center justify-center p-3 rounded-full bg-paper mb-4 border border-sand">
-                            <Sparkles className="w-6 h-6 text-primary" />
-                        </div>
-                        <h2 className="text-2xl font-serif font-bold text-ink mb-2">
-                            새로운 시작을 기록하세요
+                        </button>
+                        <h2 className="font-display text-[22px] font-bold text-ink">
+                            새로운 시작
                         </h2>
-                        <p className="text-sm text-ink-light font-serif">
-                            AI 산모 일기와 함께하는 특별한 여정
+                        <p className="text-[13px] text-cocoa-muted mt-1">
+                            산모일기와 함께하는 특별한 여정
                         </p>
                     </div>
 
-                    <form className="space-y-5" onSubmit={handleSubmit}>
+                    <form className="space-y-4" onSubmit={handleSubmit}>
                         <FormInput
-                            id="username"
-                            label="아이디"
-                            type="text"
+                            id="username" label="아이디" type="text"
                             placeholder="영문자와 숫자만 (3자 이상)"
-                            value={form.username}
-                            onChange={updateField('username')}
-                            error={errors.username}
-                            disabled={isLoading}
+                            value={form.username} onChange={updateField('username')}
+                            error={errors.username} disabled={isLoading}
                         />
-
                         <FormInput
-                            id="password"
-                            label="비밀번호"
-                            type="password"
+                            id="password" label="비밀번호" type="password"
                             placeholder="8자 이상 (특수문자 포함)"
-                            value={form.password}
-                            onChange={updateField('password')}
-                            error={errors.password}
-                            disabled={isLoading}
-                            showPasswordToggle
+                            value={form.password} onChange={updateField('password')}
+                            error={errors.password} disabled={isLoading} showPasswordToggle
                         />
-
                         <FormInput
-                            id="confirmPassword"
-                            label="비밀번호 확인"
-                            type="password"
+                            id="confirmPassword" label="비밀번호 확인" type="password"
                             placeholder="비밀번호를 다시 입력해주세요"
-                            value={form.confirmPassword}
-                            onChange={updateField('confirmPassword')}
-                            error={errors.confirmPassword}
-                            disabled={isLoading}
-                            showPasswordToggle
+                            value={form.confirmPassword} onChange={updateField('confirmPassword')}
+                            error={errors.confirmPassword} disabled={isLoading} showPasswordToggle
                         />
-
                         <FormInput
-                            id="email"
-                            label="이메일"
-                            type="email"
+                            id="email" label="이메일" type="email"
                             placeholder="example@email.com"
-                            value={form.email}
-                            onChange={updateField('email')}
-                            error={errors.email}
-                            disabled={isLoading}
+                            value={form.email} onChange={updateField('email')}
+                            error={errors.email} disabled={isLoading}
                         />
-
                         <FormInput
-                            id="phone"
-                            label="전화번호"
-                            type="tel"
+                            id="phone" label="전화번호" type="tel"
                             placeholder="01012345678"
-                            value={form.phone}
-                            onChange={updateField('phone')}
-                            error={errors.phone}
-                            disabled={isLoading}
+                            value={form.phone} onChange={updateField('phone')}
+                            error={errors.phone} disabled={isLoading}
                         />
 
-                        <div className="pt-4 space-y-3">
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
+                        <div className="pt-3 space-y-3">
+                            <button
                                 type="submit"
                                 disabled={!isValid || isLoading}
-                                className="w-full flex justify-center py-3.5 px-4 text-[15px] font-medium rounded-xl text-white bg-primary hover:bg-primary-dark transition-all duration-300 shadow-soft disabled:opacity-50 disabled:cursor-not-allowed group"
+                                className="w-full py-3 px-4 text-[14px] font-bold rounded-md text-white bg-terra hover:bg-terra-dark active:bg-terra-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed tracking-wide"
                             >
-                                {isLoading ? (
-                                    <span className="flex items-center gap-2">
-                                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                        </svg>
-                                        가입 처리 중...
-                                    </span>
-                                ) : (
-                                    '회원가입 완료하기'
-                                )}
-                            </motion.button>
+                                {isLoading ? '가입 처리 중...' : '회원가입'}
+                            </button>
 
                             <button
                                 type="button"
-                                onClick={() => navigate('/')}
+                                onClick={() => navigate('/login')}
                                 disabled={isLoading}
-                                className="w-full flex justify-center py-3.5 px-4 text-[15px] font-medium rounded-xl text-ink-light hover:text-primary hover:bg-primary/5 transition-all duration-300"
+                                className="w-full py-2.5 text-[13px] text-cocoa-muted hover:text-terra transition-colors"
                             >
-                                이미 계정이 있으신가요? 로그인
+                                이미 계정이 있으신가요? <span className="font-bold underline underline-offset-2">로그인</span>
                             </button>
                         </div>
                     </form>

@@ -1,6 +1,5 @@
 import { renderHook, act } from "@testing-library/react";
 import useCharacter from "./useCharacter"; // 실제 훅 경로
-import { useAuthStore } from "../stores";
 
 // Mock Worker
 class MockWorker {
@@ -51,25 +50,43 @@ jest.mock("../api/client", () => ({
   chatApi: {},
 }));
 
-jest.mock("axios");
+jest.mock("axios", () => ({
+  create: jest.fn(() => ({
+    interceptors: {
+      request: { use: jest.fn(), eject: jest.fn() },
+      response: { use: jest.fn(), eject: jest.fn() },
+    },
+    defaults: { headers: { common: {} } },
+  })),
+  get: jest.fn(() => Promise.resolve({ data: {} })),
+  post: jest.fn(() => Promise.resolve({ data: {} })),
+}));
+
+// Mock workerFactory to avoid import.meta issue
+jest.mock("../utils/workerFactory", () => ({
+  createImageCompressionWorker: () => new MockWorker(),
+}));
 
 describe("useCharacter - Worker Integration", () => {
   it("should handle worker error gracefully", async () => {
     // Setup
-    const { result, waitForNextUpdate } = renderHook(() =>
-      useCharacter(jest.fn()),
-    );
+    const { result } = renderHook(() => useCharacter(jest.fn()));
+
+    // Set required fields to bypass validation
+    act(() => {
+      result.current.setChildName("Test Child");
+      result.current.setChildBirthday("2024-01-01");
+    });
 
     const errorFile = new File([""], "error.png", { type: "image/png" });
     const normalFile = new File([""], "normal.png", { type: "image/png" });
 
     // Act
-    let error;
     await act(async () => {
       try {
         await result.current.generateCharacter(errorFile, normalFile, "shy");
       } catch (e) {
-        error = e;
+        // Did not expect error to be thrown, prompt should be handled inside hook
       }
     });
 

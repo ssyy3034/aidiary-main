@@ -1,98 +1,73 @@
-```
-import React, { useState } from 'react';
-import {
-    Box,
-    Typography,
-    Divider,
-    CircularProgress
-} from '@mui/material';
-import PersonalityTest from './PersonalityTest';
-import { usePersonalityGenerator } from '../hooks/usePersonalityGenerator';
-import CommonButton from './common/CommonButton';
-import GlassCard from './common/GlassCard';
+import React, { useState } from "react";
+import PersonalityTest from "./PersonalityTest";
+import { usePersonalityGenerator } from "../hooks/usePersonalityGenerator";
+import CommonButton from "./common/CommonButton";
+import GlassCard from "./common/GlassCard";
 
 interface CharacterPersonalityBuilderProps {
-    onPersonalityGenerated: (summary: string) => void;
+  onPersonalityGenerated: (summary: string) => void;
 }
 
-const mainColor = '#fff0e6';
-const subColor = '#c2675a';
+const subColor = "#C67D5B";
 
-const CharacterPersonalityBuilder: React.FC<CharacterPersonalityBuilderProps> = ({ onPersonalityGenerated }) => {
-    const [parent1Result, setParent1Result] = useState<string | null>(null);
-    const [parent2Result, setParent2Result] = useState<string | null>(null);
+const CharacterPersonalityBuilder: React.FC<
+  CharacterPersonalityBuilderProps
+> = ({ onPersonalityGenerated }) => {
+  const [parent1Result, setParent1Result] = useState<string | null>(null);
+  const [parent2Result, setParent2Result] = useState<string | null>(null);
 
-    // Custom Hook 사용
-    const {
-        generatePersonality,
-        loading,
-        generatedPersonality,
-        markdownBody,
-        getField
-    } = usePersonalityGenerator(onPersonalityGenerated);
+  const {
+    generatePersonality, loading, generatedPersonality, markdownBody, getField,
+  } = usePersonalityGenerator(onPersonalityGenerated);
 
-    const handleGenerate = () => {
-        if (parent1Result && parent2Result) {
-            generatePersonality(parent1Result, parent2Result);
-        }
-    };
+  const handleGenerate = () => {
+    if (parent1Result && parent2Result) generatePersonality(parent1Result, parent2Result);
+  };
 
-    return (
-        <Box sx={{ backgroundColor: mainColor, minHeight: '100vh', py: 6, px: 2, display: 'flex', justifyContent: 'center' }}>
-            <GlassCard subColor={subColor}>
-                <Typography variant="h5" align="center" fontWeight="bold" gutterBottom sx={{ color: subColor }}>
-                    부모 성격을 기반으로 아이 성격 만들기
-                </Typography>
+  return (
+    <div className="min-h-screen py-6 px-4 flex justify-center bg-linen">
+      <GlassCard subColor={subColor}>
+        <h2 className="text-[20px] font-display font-bold text-center text-ink mb-2">
+          부모 성격을 기반으로<br />아이 성격 만들기
+        </h2>
+        <p className="text-center text-cocoa-muted text-[13px] mb-6">
+          두 사람의 마음을 담아 아이의 성격을 상상해보세요
+        </p>
 
-                <Typography variant="subtitle1" align="center" sx={{ color: subColor, mb: 3 }}>
-                    두 사람의 마음을 담아 아이의 성격을 상상해보세요
-                </Typography>
+        <PersonalityTest parentLabel="부모 1" onSubmit={setParent1Result} />
+        <hr className="my-6 border-linen-deep" />
+        <PersonalityTest parentLabel="부모 2" onSubmit={setParent2Result} />
 
-                <PersonalityTest parentLabel="부모 1" onSubmit={setParent1Result} />
-                <Divider sx={{ my: 4 }} />
-                <PersonalityTest parentLabel="부모 2" onSubmit={setParent2Result} />
+        <div className="text-center mt-6">
+          <CommonButton loading={loading} disabled={!parent1Result || !parent2Result} onClick={handleGenerate} subColor={subColor}>
+            아이 성격 생성하기
+          </CommonButton>
+        </div>
 
-                <Box sx={{ textAlign: 'center', mt: 4 }}>
-                    <CommonButton
-                        loading={loading}
-                        disabled={!parent1Result || !parent2Result}
-                        onClick={handleGenerate}
-                        subColor={subColor}
-                    >
-                        아이 성격 생성하기
-                    </CommonButton>
-                </Box>
+        {generatedPersonality && (
+          <div className="mt-6 p-5 bg-white border border-linen-deep rounded-lg shadow-paper">
+            <h3 className="text-[16px] font-display font-bold text-ink mb-3">
+              생성된 아이 성격
+            </h3>
 
-                {generatedPersonality && (
-                    <Box sx={{ mt: 5, p: 4, backgroundColor: '#fffdf9', borderRadius: 4, border: `2px dashed ${subColor}`, boxShadow: '0 4px 16px rgba(0,0,0,0.05)', fontFamily: `'Noto Serif KR', 'Pretendard', serif` }}>
-                        <Typography variant="h6" sx={{ color: subColor, fontWeight: 700, mb: 2 }}>
-                            🌟 생성된 아이 성격
-                        </Typography>
+            <p className="text-[12px] font-bold text-terra tracking-wide uppercase mb-2">키워드</p>
+            <div className="flex gap-2 flex-wrap mb-4">
+              {getField("성격 키워드", markdownBody).split("\n").map((kw, i) => (
+                <span key={i} className="stamp text-terra">
+                  {kw.replace(/^-/, "").trim()}
+                </span>
+              ))}
+            </div>
 
-                        <Typography variant="subtitle1" sx={{ color: subColor, fontWeight: 600, mb: 1 }}>
-                            ✨ 성격 키워드
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
-                            {getField('성격 키워드', markdownBody).split('\n').map((kw, i) => (
-                                <Box key={i} sx={{ px: 2, py: 0.5, borderRadius: '9999px', backgroundColor: 'rgba(194, 103, 90, 0.15)', color: subColor, fontWeight: 500, fontSize: '0.9rem' }}>
-                                    {kw.replace(/^-/, '').trim()}
-                                </Box>
-                            ))}
-                        </Box>
-
-                        <Typography variant="subtitle1" sx={{ color: subColor, fontWeight: 600, mb: 1 }}>
-                            🧠 성격 설명
-                        </Typography>
-                        <Typography variant="body1" sx={{ color: '#4a403a', lineHeight: 1.9, backgroundColor: 'rgba(255,255,255,0.6)', px: 2, py: 2, borderRadius: 2, whiteSpace: 'pre-line' }}>
-                            {getField('간단한 성격 설명', markdownBody)}
-                        </Typography>
-                    </Box>
-                )}
-            </GlassCard>
-        </Box>
-    );
+            <p className="text-[12px] font-bold text-sage-dark tracking-wide uppercase mb-2">설명</p>
+            <p className="text-cocoa text-[14px] leading-relaxed whitespace-pre-line">
+              {getField("간단한 성격 설명", markdownBody)}
+            </p>
+          </div>
+        )}
+      </GlassCard>
+    </div>
+  );
 };
 
-
 export default CharacterPersonalityBuilder;
-```

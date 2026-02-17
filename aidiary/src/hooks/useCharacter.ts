@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { childApi, chatApi } from "../api/client";
+import { chatApi } from "../api/client";
 import { useAuthStore } from "../stores";
 import type { CharacterData, ChatMessage } from "../types";
 import { createImageCompressionWorker } from "../utils/workerFactory";

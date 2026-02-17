@@ -23,7 +23,9 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
     const height = bitmap.height * scale;
 
     const offscreen = new OffscreenCanvas(width, height);
-    const ctx = offscreen.getContext("2d");
+    const ctx = offscreen.getContext(
+      "2d",
+    ) as OffscreenCanvasRenderingContext2D | null;
 
     if (!ctx) {
       throw new Error("Canvas Context 생성 실패");
@@ -32,6 +34,7 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
     ctx.drawImage(bitmap, 0, 0, width, height);
 
     // Blob으로 변환
+    // @ts-expect-error convertToBlob is available in modern browsers
     const blob = await offscreen.convertToBlob({
       type: "image/jpeg",
       quality: quality,
