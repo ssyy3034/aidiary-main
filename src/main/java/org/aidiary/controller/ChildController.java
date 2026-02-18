@@ -46,13 +46,23 @@ public class ChildController {
         }
     }
 
-
     @GetMapping("/get/{id}")
     public ResponseEntity<ChildDTO> getChildById(@PathVariable Long id) {
         if (id == null) {
             return ResponseEntity.badRequest().build();
         }
         return childService.getChildByUserId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ChildDTO> getMyChild(@RequestHeader("Authorization") String token) {
+        Long userId = extractUserIdFromToken(token);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return childService.getChildByUserId(userId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

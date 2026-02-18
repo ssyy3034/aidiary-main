@@ -25,7 +25,8 @@ public class ChatService {
     /**
      * 캐릭터 채팅 - Flask FaceAPI 서버로 요청 위임
      */
-    public ChatResponse generateCharacterResponse(ChatRequest request, String personality) {
+    public ChatResponse generateCharacterResponse(ChatRequest request, String personality, int weeks, String userName,
+            String recentDiary) {
         try {
             String url = flaskApiUrl + "/api/openai";
             log.info("Requesting chat response from Flask API: {}", url);
@@ -36,12 +37,25 @@ public class ChatService {
             Map<String, Object> body = new HashMap<>();
             String fullPrompt = request.getMessage();
 
-            // Context(이전 대화 등)가 있다면 프롬프트에 추가 (선택 사항 - Flask 쪽 로직에 따라 조정 가능)
+            // Context(이전 대화 등)가 있다면 프롬프트에 추가
             if (request.getContext() != null && !request.getContext().isEmpty()) {
                 fullPrompt = "이전 대화 맥락: " + request.getContext() + "\n\n" + request.getMessage();
             }
 
             body.put("prompt", fullPrompt);
+
+            // Context for LangGraph
+            Map<String, Object> context = new HashMap<>();
+            context.put("weeks", weeks);
+            context.put("user_name", userName);
+            context.put("recent_diary", recentDiary);
+            // personality could also be passed if the python side uses it dynamicallly,
+            // but for now the python side has a 'rewrite_persona' node.
+            // We can pass it if we want the python node to use this specific personality
+            // text.
+            // context.put("personality", personality);
+
+            body.put("context", context);
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
@@ -50,6 +64,10 @@ public class ChatService {
 
             if (response != null && response.containsKey("response")) {
                 String aiResponse = (String) response.get("response");
+                // Intent info might be useful for logging or UI
+                String intent = (String) response.get("intent");
+                log.info("AI Response Intent: {}", intent);
+
                 return ChatResponse.success(aiResponse);
             } else {
                 log.warn("Flask API returned null or invalid response");

@@ -17,6 +17,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 @EnableWebSecurity
@@ -25,6 +28,9 @@ public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
 
+    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:3002}")
+    private String allowedOrigins;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -32,7 +38,13 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ CORS 설정
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 인증 불필요 경로
+                        // 인증 불필요 경로 (정적 리소스 포함)
+                        .requestMatchers("/", "/index.html", "/static/**", "/assets/**", "/*.ico", "/*.json", "/*.png")
+                        .permitAll()
+                        // SPA 클라이언트 라우트 (React Router가 처리)
+                        .requestMatchers("/login", "/register", "/diary", "/profile", "/character",
+                                "/character-personality")
+                        .permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**")
                         .permitAll()
@@ -65,9 +77,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(
-                Arrays.asList("http://localhost:3000", "http://localhost:3001", "http://localhost:3002")); // ✅ React 앱
-                                                                                                           // 도메인 지정
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true); // ✅ 'true'일 경우, AllowedOrigins는 '*'를 사용할 수 없음

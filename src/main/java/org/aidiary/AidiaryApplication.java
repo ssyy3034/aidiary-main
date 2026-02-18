@@ -7,7 +7,10 @@ import org.springframework.boot.web.servlet.MultipartConfigFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.unit.DataSize;
 
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
+
 @SpringBootApplication
+@EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class AidiaryApplication {
 
     public static void main(String[] args) {
@@ -22,4 +25,3 @@ public class AidiaryApplication {
         return factory.createMultipartConfig();
     }
 }
-

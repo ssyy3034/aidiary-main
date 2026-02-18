@@ -1,0 +1,8 @@
+faceapi/
+aidiary/node_modules/
+.git/
+.gradle/
+build/
+out/
+.idea/
+*.DS_Store
