@@ -51,6 +51,7 @@ out/
 /aidiary/.env
 
 .env
+.env.prod
 
 # Ignore
 .DS_Store
@@ -60,3 +61,22 @@ venv/
 faceapi/venv/
 node_modules/
 docs/
+chroma_db/
+
+# Uploads & Generated
+faceapi/uploads/
+faceapi/generated_images/
+
+# Logs
+logs.txt
+logs_restart.txt
+gen.md
+
+# Static build output (served by Spring Boot in dev)
+src/main/resources/static/static/
+src/main/resources/static/asset-manifest.json
+src/main/resources/static/favicon.ico
+src/main/resources/static/logo192.png
+src/main/resources/static/logo512.png
+src/main/resources/static/manifest.json
+src/main/resources/static/robots.txt
