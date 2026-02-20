@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aidiary.dto.request.ChatRequest;
 import org.aidiary.dto.response.ChatResponse;
-import org.aidiary.entity.Child;
+import org.aidiary.dto.ChildDTO;
 import org.aidiary.entity.User;
 import org.aidiary.service.ChatService;
 import org.aidiary.service.ChildService;
@@ -40,7 +40,7 @@ public class ChatController {
         // Current Date - (Due Date - 280 days) = Days Pregnant
         // Weeks = Days / 7
 
-        Child child = childService.getChildByUserId(user.getId()).orElse(null);
+        ChildDTO child = childService.getChildByUserId(user.getId()).orElse(null);
 
         String personality = null;
         int weeks = 0;
