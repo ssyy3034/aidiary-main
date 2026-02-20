@@ -40,7 +40,7 @@ jobs:
   # 프론트엔드 배포: S3 + CloudFront
   deploy-frontend:
     needs: changes
-    if: needs.changes.outputs.frontend == 'true' || github.event.inputs.deploy_all == 'true'
+    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -82,7 +82,7 @@ jobs:
   # Spring Boot 빌드 → ECR push → EC2 pull
   deploy-backend:
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || github.event.inputs.deploy_all == 'true'
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -119,7 +119,7 @@ jobs:
   # faceapi 빌드 → ECR push → EC2 pull
   deploy-faceapi:
     needs: changes
-    if: needs.changes.outputs.faceapi == 'true' || github.event.inputs.deploy_all == 'true'
+    if: needs.changes.outputs.faceapi == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
