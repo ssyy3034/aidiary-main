@@ -54,7 +54,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: aidiary
-        run: npm ci
+        run: rm -f package-lock.json && npm install
 
       - name: Build React app
         working-directory: aidiary
