@@ -1,6 +1,6 @@
 services:
   aidiary-app:
-    build: .
+    image: 376129842460.dkr.ecr.ap-northeast-2.amazonaws.com/aidiary-app:latest
     container_name: aidiary-app
     env_file:
       - .env.prod
@@ -20,7 +20,7 @@ services:
       - logs:/app/logs
 
   face-api:
-    build: ./faceapi
+    image: 376129842460.dkr.ecr.ap-northeast-2.amazonaws.com/face-api:latest
     container_name: face-api
     env_file:
       - .env.prod

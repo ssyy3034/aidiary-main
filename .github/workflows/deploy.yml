@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REGISTRY: 376129842460.dkr.ecr.ap-northeast-2.amazonaws.com
+
 jobs:
   # 변경된 파일 감지
   changes:
@@ -11,6 +15,7 @@ jobs:
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
+      faceapi: ${{ steps.filter.outputs.faceapi }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -21,10 +26,10 @@ jobs:
               - 'aidiary/**'
             backend:
               - 'src/**'
-              - 'faceapi/**'
               - 'build.gradle'
               - 'Dockerfile'
-              - 'docker-compose.prod.yml'
+            faceapi:
+              - 'faceapi/**'
 
   # 프론트엔드 배포: S3 + CloudFront
   deploy-frontend:
@@ -57,7 +62,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy to S3
         run: aws s3 sync aidiary/build/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
@@ -68,12 +73,29 @@ jobs:
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*"
 
-  # 백엔드 배포: EC2 SSH
+  # Spring Boot 빌드 → ECR push → EC2 pull
   deploy-backend:
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+      - name: Build and push aidiary-app
+        run: |
+          docker build -t ${{ env.ECR_REGISTRY }}/aidiary-app:latest .
+          docker push ${{ env.ECR_REGISTRY }}/aidiary-app:latest
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1
         with:
@@ -81,8 +103,46 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 376129842460.dkr.ecr.ap-northeast-2.amazonaws.com
             cd ~/aidiary-main
             git pull origin main
-            docker compose -f docker-compose.prod.yml build
-            docker compose -f docker-compose.prod.yml up -d
+            docker-compose --env-file .env.prod -f docker-compose.prod.yml pull aidiary-app
+            docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d aidiary-app
+            docker image prune -f
+
+  # faceapi 빌드 → ECR push → EC2 pull
+  deploy-faceapi:
+    needs: changes
+    if: needs.changes.outputs.faceapi == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        run: aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+      - name: Build and push face-api
+        run: |
+          docker build -t ${{ env.ECR_REGISTRY }}/face-api:latest ./faceapi
+          docker push ${{ env.ECR_REGISTRY }}/face-api:latest
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 376129842460.dkr.ecr.ap-northeast-2.amazonaws.com
+            cd ~/aidiary-main
+            git pull origin main
+            docker-compose --env-file .env.prod -f docker-compose.prod.yml pull face-api
+            docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d face-api
             docker image prune -f
