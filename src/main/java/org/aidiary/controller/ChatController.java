@@ -3,15 +3,19 @@ package org.aidiary.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.aidiary.dto.request.ChatRequest;
 import org.aidiary.dto.response.ChatResponse;
+import org.aidiary.entity.Child;
 import org.aidiary.entity.User;
 import org.aidiary.service.ChatService;
 import org.aidiary.service.ChildService;
+import org.aidiary.service.DiaryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
