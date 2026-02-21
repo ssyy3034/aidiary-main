@@ -1,6 +1,7 @@
 package org.aidiary.service;
 
 import lombok.RequiredArgsConstructor;
+import org.aidiary.dto.ChildDTO;
 import org.aidiary.dto.request.LoginRequest;
 import org.aidiary.dto.request.SignUpRequest;
 import org.aidiary.dto.response.AuthResponse;
@@ -59,6 +60,7 @@ public class AuthService {
                                 .username(savedUser.getUsername())
                                 .email(savedUser.getEmail())
                                 .role(savedUser.getRole().name())
+                                .child(savedUser.getChild() != null ? new ChildDTO(savedUser.getChild()) : null)
                                 .build();
         }
 
@@ -86,6 +88,7 @@ public class AuthService {
                                 .username(user.getUsername())
                                 .email(user.getEmail())
                                 .role(user.getRole().name())
+                                .child(user.getChild() != null ? new ChildDTO(user.getChild()) : null)
                                 .build();
         }
 }

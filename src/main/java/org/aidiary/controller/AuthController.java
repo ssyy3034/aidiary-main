@@ -35,12 +35,15 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> signUp(@Valid @RequestBody SignUpRequest request) {
         log.info("회원가입 요청: {}", request.getUsername());
+        long startTime = System.currentTimeMillis();
         try {
             AuthResponse response = authService.signUp(request);
-            log.info("회원가입 성공: {}", request.getUsername());
+            long endTime = System.currentTimeMillis();
+            log.info("회원가입 성공: {} (소요 시간: {}ms)", request.getUsername(), (endTime - startTime));
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("회원가입 실패: {}", e.getMessage());
+            long endTime = System.currentTimeMillis();
+            log.error("회원가입 실패: {} (소요 시간: {}ms) - {}", request.getUsername(), (endTime - startTime), e.getMessage());
             throw e;
         }
     }

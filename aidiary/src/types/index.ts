@@ -28,7 +28,7 @@ export interface UserProfile {
 export interface ChildInfo {
   id?: number;
   childName: string;
-  meetDate?: string;
+  childBirthday?: string;
   characterImage?: string;
 }
 

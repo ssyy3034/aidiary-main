@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.aidiary.dto.ChildDTO;
 
 @Getter
 @Builder
@@ -15,4 +16,5 @@ public class AuthResponse {
     private String email;
     private String role;
     private Long id;
+    private ChildDTO child;
 } 

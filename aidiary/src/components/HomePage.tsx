@@ -15,7 +15,11 @@ const stagger = {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const } },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const },
+  },
 };
 
 const HomePage: React.FC = () => {
@@ -24,33 +28,43 @@ const HomePage: React.FC = () => {
   const child = userInfo?.child;
 
   const [dailyPrompt, setDailyPrompt] = useState("");
+  const [isLoadingPrompt, setIsLoadingPrompt] = useState(true);
   const [recentEntries, setRecentEntries] = useState<DiaryEntry[]>([]);
 
   const fetchData = useCallback(async () => {
+    setIsLoadingPrompt(true);
     try {
       const [promptRes, diaryRes] = await Promise.allSettled([
         diaryAiApi.getDailyQuestion(),
         diaryApi.getAll(0, 2),
       ]);
-      if (promptRes.status === "fulfilled") setDailyPrompt(promptRes.value.data.question);
+      if (promptRes.status === "fulfilled")
+        setDailyPrompt(promptRes.value.data.question);
       if (diaryRes.status === "fulfilled") {
         setRecentEntries(
           diaryRes.value.data.content.map((item: any) => ({
-            id: item.id, title: item.title, content: item.content,
-            emotion: item.emotion || "calm", createdAt: item.createdAt,
-          }))
+            id: item.id,
+            title: item.title,
+            content: item.content,
+            emotion: item.emotion || "calm",
+            createdAt: item.createdAt,
+          })),
         );
       }
     } catch (error) {
       console.error("홈 데이터 로드 실패:", error);
+    } finally {
+      setIsLoadingPrompt(false);
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const getDday = () => {
-    if (!child?.meetDate) return null;
-    const diff = dayjs(child.meetDate).diff(dayjs(), "day");
+    if (!child?.childBirthday) return null;
+    const diff = dayjs(child.childBirthday).diff(dayjs(), "day");
     if (diff > 0) return `D-${diff}`;
     if (diff === 0) return "D-Day";
     return `D+${Math.abs(diff)}`;
@@ -71,13 +85,18 @@ const HomePage: React.FC = () => {
         </p>
         <div className="flex items-end justify-between mt-1">
           <h1 className="text-[26px] font-display font-bold leading-tight text-ink">
-            {child?.childName
-              ? <>{child.childName}<span className="text-terra">의</span> 하루</>
-              : <>오늘의 <span className="text-terra">이야기</span></>}
+            {child?.childName ? (
+              <>
+                {child.childName}
+                <span className="text-terra">의</span> 하루
+              </>
+            ) : (
+              <>
+                오늘의 <span className="text-terra">이야기</span>
+              </>
+            )}
           </h1>
-          {dday && (
-            <span className="stamp text-terra mb-1">{dday}</span>
-          )}
+          {dday && <span className="stamp text-terra mb-1">{dday}</span>}
         </div>
       </motion.div>
 
@@ -189,7 +208,10 @@ const HomePage: React.FC = () => {
                 <div className="flex items-center gap-2 mb-2">
                   <span
                     className="stamp"
-                    style={{ color: EMOTION_COLORS[entry.emotion] || EMOTION_COLORS.calm }}
+                    style={{
+                      color:
+                        EMOTION_COLORS[entry.emotion] || EMOTION_COLORS.calm,
+                    }}
                   >
                     {EMOTION_LABELS[entry.emotion] || "평온"}
                   </span>

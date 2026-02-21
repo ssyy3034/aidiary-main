@@ -5,7 +5,7 @@ from config import Config
 HUGGING_FACE_TOKEN = Config.HUGGING_FACE_TOKEN
 class HuggingFaceService:
     def __init__(self):
-        self.api_url = "https://api-inference.huggingface.co/models/gpt2"
+        self.api_url = "https://router.huggingface.co/models/gpt2"
         self.api_token = HUGGING_FACE_TOKEN
 
     def get_completion(self, prompt):

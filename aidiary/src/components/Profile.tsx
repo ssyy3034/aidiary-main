@@ -9,7 +9,7 @@ interface ProfileProps {
     onDeleteAccount: () => Promise<void> | void;
 }
 
-const DEFAULT_CHILD: ChildInfo = { childName: '', meetDate: '' };
+const DEFAULT_CHILD: ChildInfo = { childName: '', childBirthday: '' };
 
 const Profile: React.FC<ProfileProps> = ({ userInfo, onUpdateProfile, onDeleteAccount }) => {
     const [isEditing, setIsEditing] = useState(false);

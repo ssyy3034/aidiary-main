@@ -32,6 +32,8 @@ services:
     volumes:
       - hf_cache:/root/.cache/huggingface
       - generated_images:/app/generated_images
+      - ./faceapi/routes/chat_routes.py:/app/routes/chat_routes.py:ro
+      - ./faceapi/services/hugging_face_service.py:/app/services/hugging_face_service.py:ro
 
 volumes:
   logs:

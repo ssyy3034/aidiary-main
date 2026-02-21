@@ -67,14 +67,18 @@ const AppContent: React.FC = () => {
           child: response.data.child || null,
         });
 
-        // ✅ 추가: 사용자 정보 로드 시 자녀 정보가 있다면 가져오기
-        try {
-          const childResponse = await childApi.getMe();
-          if (childResponse.data) {
-            setCharacter(childResponse.data);
+        // ✅ 수정: 사용자 정보에 자녀 데이터가 있으면 바로 설정
+        if (response.data.child) {
+          setCharacter(response.data.child);
+        } else {
+          try {
+            const childResponse = await childApi.getMe();
+            if (childResponse.data) {
+              setCharacter(childResponse.data);
+            }
+          } catch (childErr) {
+            console.log("등록된 자녀 정보가 없습니다.");
           }
-        } catch (childErr) {
-          console.log("등록된 자녀 정보가 없습니다.");
         }
       } catch (error: any) {
         if (error.response?.status !== 401)
@@ -92,14 +96,18 @@ const AppContent: React.FC = () => {
       const { token, username: u, email, id, child } = response.data;
       login(token, { id, username: u, email, phone: "", child: child ?? null });
 
-      // ✅ 추가: 로그인 직후 자녀 정보 가져오기
-      try {
-        const childResponse = await childApi.getMe();
-        if (childResponse.data) {
-          setCharacter(childResponse.data);
+      // ✅ 수정: 로그인 응답에 자녀 정보가 있으면 바로 설정, 없으면 API 호출 시도
+      if (child) {
+        setCharacter(child);
+      } else {
+        try {
+          const childResponse = await childApi.getMe();
+          if (childResponse.data) {
+            setCharacter(childResponse.data);
+          }
+        } catch (childErr) {
+          console.log("등록된 자녀 정보가 없습니다.");
         }
-      } catch (childErr) {
-        console.log("등록된 자녀 정보가 없습니다.");
       }
 
       navigate("/");
@@ -153,7 +161,7 @@ const AppContent: React.FC = () => {
         child: profile.child
           ? {
               childName: profile.child.childName,
-              childBirthday: profile.child.meetDate,
+              childBirthday: profile.child.childBirthday,
             }
           : undefined,
       });
