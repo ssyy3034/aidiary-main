@@ -49,6 +49,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**")
                         .permitAll()
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/api/diary-ai/daily-question").permitAll()
+                        .requestMatchers("/api/diary-ai/images/**").permitAll()
                         // 인증 필요 경로
                         .requestMatchers("/api/user/**").authenticated()
                         .requestMatchers("/api/diary/**").authenticated()

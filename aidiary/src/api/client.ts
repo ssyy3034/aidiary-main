@@ -4,10 +4,8 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
-// API Base URLs
+// API Base URL — 모든 요청이 Spring Boot(BFF)를 통해 전달됨
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8080";
-const FACE_API_URL =
-  process.env.REACT_APP_FACE_API_URL || "http://localhost:5001";
 
 /**
  * 메인 백엔드 API 클라이언트
@@ -18,14 +16,6 @@ export const apiClient: AxiosInstance = axios.create({
     "Content-Type": "application/json",
   },
   timeout: 30000, // 30초
-});
-
-/**
- * Flask Face API 클라이언트
- */
-export const faceApiClient: AxiosInstance = axios.create({
-  baseURL: FACE_API_URL,
-  timeout: 60000, // 60초 (이미지 처리는 시간이 오래 걸릴 수 있음)
 });
 
 /**
@@ -102,6 +92,31 @@ export const childApi = {
 export const chatApi = {
   send: (message: string, context?: string) =>
     apiClient.post("/api/chat", { message, context }),
+};
+
+/**
+ * Diary AI API — Flask 프록시 (Spring Boot BFF 경유)
+ */
+export const diaryAiApi = {
+  getDailyQuestion: () => apiClient.get("/api/diary-ai/daily-question"),
+  analyzeEmotion: (prompt: string) =>
+    apiClient.post("/api/diary-ai/emotion-analysis", { prompt }),
+  generateDrawing: (diaryText: string) =>
+    apiClient.post("/api/diary-ai/drawing", { diary_text: diaryText }, { timeout: 120000 }),
+  getImageUrl: (filename: string) =>
+    `${API_BASE_URL}/api/diary-ai/images/${filename}`,
+};
+
+/**
+ * Image API — 캐릭터 이미지 분석 (Spring Boot BFF 경유)
+ */
+export const imageApi = {
+  analyze: (formData: FormData) =>
+    apiClient.post("/api/images/analyze", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      responseType: "blob",
+      timeout: 60000, // 이미지 처리는 시간이 오래 걸릴 수 있음
+    }),
 };
 
 export default apiClient;

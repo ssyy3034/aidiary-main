@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
-import { diaryApi } from "../api/client";
+import { diaryApi, diaryAiApi } from "../api/client";
 import type { DiaryEntry, EmotionType, AIAnalysisResponse } from "../types";
-
-const FLASK_API_URL =
-  process.env.REACT_APP_FACE_API_URL || "http://localhost:5001";
 
 interface UseDiaryReturn {
   // 상태
@@ -71,7 +67,7 @@ export const useDiary = (): UseDiaryReturn => {
   // 오늘의 질문 조회
   const fetchDailyPrompt = useCallback(async () => {
     try {
-      const response = await axios.get(`${FLASK_API_URL}/api/daily-question`);
+      const response = await diaryAiApi.getDailyQuestion();
       setDailyPrompt(response.data.question);
     } catch (error) {
       console.error("오늘의 질문 불러오기 실패:", error);
@@ -148,12 +144,10 @@ export const useDiary = (): UseDiaryReturn => {
       setLoadingResponses((prev) => ({ ...prev, [entryId]: true }));
 
       try {
-        const response = await axios.post<AIAnalysisResponse>(
-          `${FLASK_API_URL}/api/openai`,
-          { prompt: content },
-        );
+        const response = await diaryAiApi.analyzeEmotion(content);
 
-        const { emotion, response: aiResponse } = response.data;
+        const { emotion, response: aiResponse } =
+          response.data as AIAnalysisResponse;
 
         setEntries((prev) =>
           prev.map((entry) =>
@@ -185,21 +179,17 @@ export const useDiary = (): UseDiaryReturn => {
   // 태아 그림일기 생성 요청
   const getDiaryDrawing = useCallback(
     async (entryId: number, content: string) => {
-      setLoadingResponses((prev) => ({ ...prev, [entryId]: true })); // Same loading state or separate? specific key could be distinct
+      setLoadingResponses((prev) => ({ ...prev, [entryId]: true }));
 
       try {
-        const response = await axios.post(
-          `${FLASK_API_URL}/api/diary-drawing`,
-          { diary_text: content },
-        );
+        const response = await diaryAiApi.generateDrawing(content);
 
         const { image_path, success } = response.data;
 
         if (success && image_path) {
-          // filename extraction
           const filename =
             image_path.split("/").pop() || image_path.split("\\").pop();
-          const imageUrl = `${FLASK_API_URL}/api/images/${filename}`;
+          const imageUrl = diaryAiApi.getImageUrl(filename);
 
           setEntries((prev) =>
             prev.map((entry) =>

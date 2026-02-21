@@ -1,12 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
-import { chatApi } from "../api/client";
+import { chatApi, imageApi } from "../api/client";
 import { useAuthStore } from "../stores";
 import type { CharacterData, ChatMessage } from "../types";
 import { createImageCompressionWorker } from "../utils/workerFactory";
-
-const FACE_API_URL =
-  process.env.REACT_APP_FACE_API_URL || "http://localhost:5001";
 
 interface UseCharacterReturn {
   // 상태
@@ -127,10 +123,7 @@ export const useCharacter = (
         formData.append("parent1", compressedParent1, parent1File.name);
         formData.append("parent2", compressedParent2, parent2File.name);
 
-        const response = await axios.post(`${FACE_API_URL}/analyze`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-          responseType: "blob",
-        });
+        const response = await imageApi.analyze(formData);
 
         const imageUrl = URL.createObjectURL(response.data);
         const base64Image = await blobToBase64(response.data);

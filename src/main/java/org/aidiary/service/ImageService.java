@@ -24,7 +24,7 @@ public class ImageService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public String sendImages(MultipartFile parent1, MultipartFile parent2) throws IOException {
+    public byte[] sendImages(MultipartFile parent1, MultipartFile parent2) throws IOException {
         String url = flaskApiUrl + "/analyze";
 
         HttpHeaders headers = new HttpHeaders();
@@ -36,12 +36,12 @@ public class ImageService {
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(url, requestEntity, String.class);
+        ResponseEntity<byte[]> response = restTemplate.postForEntity(url, requestEntity, byte[].class);
 
         if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody();
         } else {
-            return "Error: " + response.getStatusCodeValue();
+            throw new IOException("Flask API error: " + response.getStatusCode());
         }
     }
 

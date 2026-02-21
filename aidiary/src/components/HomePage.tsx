@@ -2,15 +2,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { PenLine, Baby } from "lucide-react";
-import axios from "axios";
 import dayjs from "dayjs";
 import { useAuthStore } from "../stores";
-import { diaryApi } from "../api/client";
+import { diaryApi, diaryAiApi } from "../api/client";
 import type { DiaryEntry } from "../types";
 import { EMOTION_COLORS, EMOTION_LABELS } from "../types";
-
-const FLASK_API_URL =
-  process.env.REACT_APP_FACE_API_URL || "http://localhost:5001";
 
 const stagger = {
   hidden: {},
@@ -33,7 +29,7 @@ const HomePage: React.FC = () => {
   const fetchData = useCallback(async () => {
     try {
       const [promptRes, diaryRes] = await Promise.allSettled([
-        axios.get(`${FLASK_API_URL}/api/daily-question`),
+        diaryAiApi.getDailyQuestion(),
         diaryApi.getAll(0, 2),
       ]);
       if (promptRes.status === "fulfilled") setDailyPrompt(promptRes.value.data.question);
