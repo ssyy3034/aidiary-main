@@ -14,11 +14,10 @@ public class UserInfoDTO {
     private ChildDTO child;
 
     public UserInfoDTO(User user) {
+        this.id = user.getId();
         this.username = user.getUsername();
         this.email = user.getEmail();
         this.phone = user.getPhone();
         this.child = user.getChild() != null ? new ChildDTO(user.getChild()) : null;
     }
 }
-
-

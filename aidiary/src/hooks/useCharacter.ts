@@ -63,13 +63,13 @@ export const useCharacter = (
     if (characterData) {
       // 만약 데이터가 HTML 형태라면(실패한 요청의 결과) 초기화 처리
       const isCorrupted =
-        characterData.characterImage?.includes("<!DOCTYPE") ||
-        characterData.characterImage?.includes("<html") ||
+        characterData.characterImage?.toUpperCase().includes("<!DOCTYPE") ||
+        characterData.characterImage?.toUpperCase().includes("<HTML") ||
         characterData.characterImage?.includes("data:text/html") ||
         (characterData.characterImage?.startsWith("data:image") &&
-          atob(characterData.characterImage.split(",")[1]).includes(
-            "<!DOCTYPE",
-          ));
+          atob(characterData.characterImage.split(",")[1])
+            .toUpperCase()
+            .includes("<!DOCTYPE"));
 
       if (isCorrupted) {
         console.warn("오염된 캐릭터 데이터를 감지하여 초기화합니다.");
