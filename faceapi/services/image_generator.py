@@ -13,7 +13,7 @@ class ImageGenerator:
     def __init__(self):
         """
         ImageGenerator 초기화
-        Gemini (gemini-2.5-flash-image) 사용
+        Gemini (gemini-2.0-flash) 사용
         """
         from google import genai
         self.gemini_client = genai.Client(api_key=Config.GEMINI_API_KEY)
@@ -85,7 +85,7 @@ class ImageGenerator:
                 contents = enhanced_prompt
 
             response = self.gemini_client.models.generate_content(
-                model='gemini-2.5-flash-image',
+                model='gemini-2.0-flash',
                 contents=contents,
                 config=types.GenerateContentConfig(
                     response_modalities=['IMAGE'],
