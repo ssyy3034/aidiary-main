@@ -10,6 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@ToString(exclude = "user")
 public class Child {
     @Id
     @Column(name = "user_id") // user_id가 실제 컬럼명임을 명시
@@ -26,7 +27,7 @@ public class Child {
     @Column(name = "gpt_response", columnDefinition = "LONGTEXT")
     private String gptResponse;
 
-    @Column(name = "child_image" , columnDefinition = "LONGTEXT")
+    @Column(name = "child_image", columnDefinition = "LONGTEXT")
     private String characterImage;
 
     @Column(name = "child_name")

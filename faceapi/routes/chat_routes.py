@@ -130,7 +130,7 @@ def get_daily_question():
                 )
 
                 response = gemini_client.models.generate_content(
-                    model='gemini-1.5-flash',
+                    model='gemini-2.0-flash',
                     contents=gen_prompt,
                     config=types.GenerateContentConfig(
                         temperature=0.8,
