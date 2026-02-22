@@ -58,14 +58,30 @@ export const useCharacter = (
     });
   };
 
-  // Store 데이터 동기화
+  // Store 데이터 동기화 및 오염된 데이터(HTML) 자동 정리
   useEffect(() => {
     if (characterData) {
+      // 만약 데이터가 HTML 형태라면(실패한 요청의 결과) 초기화 처리
+      const isCorrupted =
+        characterData.characterImage?.includes("<!DOCTYPE") ||
+        characterData.characterImage?.includes("<html") ||
+        (characterData.characterImage?.startsWith("data:image") &&
+          atob(characterData.characterImage.split(",")[1]).includes(
+            "<!DOCTYPE",
+          ));
+
+      if (isCorrupted) {
+        console.warn("오염된 캐릭터 데이터를 감지하여 초기화합니다.");
+        clearCharacter();
+        setGeneratedImage(null);
+        return;
+      }
+
       setGeneratedImage(characterData.characterImage);
       setChildName(characterData.childName);
       setChildBirthday(characterData.childBirthday);
     }
-  }, [characterData]);
+  }, [characterData, clearCharacter]);
 
   // 캐릭터 생성
   const generateCharacter = useCallback(
