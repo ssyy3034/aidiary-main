@@ -36,7 +36,7 @@ export const useCharacter = (
   onCharacterCreated: (data: CharacterData) => Promise<void>,
 ): UseCharacterReturn => {
   // Global Store State
-  const { characterData, setCharacter } = useAuthStore();
+  const { characterData, setCharacter, clearCharacter } = useAuthStore();
 
   // Local UI State
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -65,6 +65,7 @@ export const useCharacter = (
       const isCorrupted =
         characterData.characterImage?.includes("<!DOCTYPE") ||
         characterData.characterImage?.includes("<html") ||
+        characterData.characterImage?.includes("data:text/html") ||
         (characterData.characterImage?.startsWith("data:image") &&
           atob(characterData.characterImage.split(",")[1]).includes(
             "<!DOCTYPE",
