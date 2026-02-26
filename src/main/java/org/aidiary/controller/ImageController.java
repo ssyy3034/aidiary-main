@@ -37,7 +37,7 @@ public class ImageController {
         byte[] parent2Bytes = parent2.getBytes();
 
         String jobId = imageJobStore.createJob();
-        imageService.processAsync(jobId,
+        imageService.processViaQueue(jobId,
                 parent1Bytes, parent1.getOriginalFilename(),
                 parent2Bytes, parent2.getOriginalFilename());
 

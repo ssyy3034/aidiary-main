@@ -2,6 +2,9 @@ package org.aidiary.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.aidiary.config.RabbitMQConfig;
+import org.aidiary.dto.ImageJobMessage;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
@@ -12,7 +15,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -26,16 +28,32 @@ public class ImageService {
     private String flaskApiUrl;
 
     private final ImageJobStore imageJobStore;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RabbitTemplate rabbitTemplate;
+    private final RestTemplateHolder restTemplateHolder = new RestTemplateHolder();
 
     /**
-     * 비동기 이미지 분석 요청.
-     * MultipartFile은 HTTP 요청 생명주기에 묶여있으므로,
-     * 컨트롤러에서 byte[]로 미리 읽어서 전달받는다.
+     * RabbitMQ를 통한 비동기 이미지 분석 요청.
+     * Tomcat 스레드를 점유하지 않고, 메시지 큐에 작업을 위임한다.
      */
+    public void processViaQueue(String jobId, byte[] parent1Bytes, String parent1Name,
+            byte[] parent2Bytes, String parent2Name) {
+        ImageJobMessage message = new ImageJobMessage(
+                jobId, parent1Bytes, parent1Name, parent2Bytes, parent2Name);
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.IMAGE_EXCHANGE,
+                RabbitMQConfig.IMAGE_ROUTING_KEY,
+                message);
+        log.info("📤 Image job {} 큐에 발행", jobId);
+    }
+
+    /**
+     * @deprecated @Async 기반 직접 처리 — processViaQueue() 사용 권장.
+     *             RabbitMQ 장애 시 fallback으로 사용 가능.
+     */
+    @Deprecated
     @Async("imageTaskExecutor")
     public void processAsync(String jobId, byte[] parent1Bytes, String parent1Name,
-                             byte[] parent2Bytes, String parent2Name) {
+            byte[] parent2Bytes, String parent2Name) {
         imageJobStore.markProcessing(jobId);
         try {
             byte[] result = callFlask(parent1Bytes, parent1Name, parent2Bytes, parent2Name);
@@ -48,7 +66,7 @@ public class ImageService {
     }
 
     private byte[] callFlask(byte[] parent1Bytes, String parent1Name,
-                              byte[] parent2Bytes, String parent2Name) throws IOException {
+            byte[] parent2Bytes, String parent2Name) throws IOException {
         String url = flaskApiUrl + "/analyze";
 
         HttpHeaders headers = new HttpHeaders();
@@ -59,7 +77,7 @@ public class ImageService {
         body.add("parent2", new FileSystemResource(parent2Name, parent2Bytes));
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-        ResponseEntity<byte[]> response = restTemplate.postForEntity(url, requestEntity, byte[].class);
+        ResponseEntity<byte[]> response = restTemplateHolder.template.postForEntity(url, requestEntity, byte[].class);
 
         if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody();
@@ -68,16 +86,13 @@ public class ImageService {
         }
     }
 
-    /** @deprecated 동기 호출 방식 — processAsync() 사용 권장 */
+    /** @deprecated 동기 호출 방식 — processViaQueue() 사용 권장 */
     @Deprecated
     public byte[] sendImages(MultipartFile parent1, MultipartFile parent2) throws IOException {
         return callFlask(parent1.getBytes(), parent1.getOriginalFilename(),
-                         parent2.getBytes(), parent2.getOriginalFilename());
+                parent2.getBytes(), parent2.getOriginalFilename());
     }
 
-    /**
-     * MultipartFile을 전송하기 위한 Helper Class
-     */
     static class FileSystemResource extends ByteArrayResource {
         private final String fileName;
 
@@ -90,5 +105,10 @@ public class ImageService {
         public String getFilename() {
             return fileName;
         }
+    }
+
+    // RestTemplate을 final field로 유지하기 위한 홀더
+    private static class RestTemplateHolder {
+        final org.springframework.web.client.RestTemplate template = new org.springframework.web.client.RestTemplate();
     }
 }
