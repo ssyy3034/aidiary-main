@@ -18,6 +18,8 @@ services:
     restart: unless-stopped
     volumes:
       - logs:/app/logs
+    networks:
+      - aidiary-net
 
   face-api:
     image: 376129842460.dkr.ecr.ap-northeast-2.amazonaws.com/face-api:latest
@@ -35,8 +37,51 @@ services:
       - ./faceapi/routes/chat_routes.py:/app/routes/chat_routes.py:ro
       - ./faceapi/services/hugging_face_service.py:/app/services/hugging_face_service.py:ro
       - ./faceapi/services/image_generator.py:/app/services/image_generator.py:ro
+    networks:
+      - aidiary-net
+
+  # ===== Monitoring Stack =====
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+    restart: unless-stopped
+    networks:
+      - aidiary-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    networks:
+      - aidiary-net
 
 volumes:
   logs:
   hf_cache:
   generated_images:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  aidiary-net:
+    driver: bridge

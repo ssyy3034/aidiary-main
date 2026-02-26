@@ -1,0 +1,131 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "JVM Heap Memory Used",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "jvm_memory_used_bytes{area=\"heap\"} / 1024 / 1024",
+          "legendFormat": "Heap Used (MB)",
+          "refId": "A"
+        },
+        {
+          "expr": "jvm_memory_max_bytes{area=\"heap\"} / 1024 / 1024",
+          "legendFormat": "Heap Max (MB)",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "decmbytes" },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Tomcat Active Threads",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "tomcat_threads_current_threads{name=\"http-nio-8080\"}",
+          "legendFormat": "Current Threads",
+          "refId": "A"
+        },
+        {
+          "expr": "tomcat_threads_busy_threads{name=\"http-nio-8080\"}",
+          "legendFormat": "Busy Threads",
+          "refId": "B"
+        },
+        {
+          "expr": "tomcat_threads_config_max_threads{name=\"http-nio-8080\"}",
+          "legendFormat": "Max Threads",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "title": "Image Task Executor - Pool & Queue",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "executor_pool_size_threads{name=\"imageTaskExecutor\"}",
+          "legendFormat": "Pool Size",
+          "refId": "A"
+        },
+        {
+          "expr": "executor_active_threads{name=\"imageTaskExecutor\"}",
+          "legendFormat": "Active Threads",
+          "refId": "B"
+        },
+        {
+          "expr": "executor_queued_tasks{name=\"imageTaskExecutor\"}",
+          "legendFormat": "Queued Tasks",
+          "refId": "C"
+        },
+        {
+          "expr": "executor_pool_max_threads{name=\"imageTaskExecutor\"}",
+          "legendFormat": "Max Pool Size",
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "title": "HTTP Request Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "rate(http_server_requests_seconds_count{uri=~\"/api/images/.*\"}[1m])",
+          "legendFormat": "{{method}} {{uri}} (req/s)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "HTTP Response Time (p95)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{uri=~\"/api/images/.*\"}[1m]))",
+          "legendFormat": "p95 {{uri}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" },
+        "overrides": []
+      }
+    },
+    {
+      "title": "GC Pause Time",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        {
+          "expr": "rate(jvm_gc_pause_seconds_sum[1m])",
+          "legendFormat": "GC Pause (s/s)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s" },
+        "overrides": []
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["spring-boot", "aidiary"],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" },
+  "title": "AiDiary - JVM & Thread Pool Monitoring",
+  "uid": "aidiary-monitoring",
+  "version": 1
+}
