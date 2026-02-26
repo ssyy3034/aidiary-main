@@ -28,7 +28,7 @@ const HomePage: React.FC = () => {
   const child = userInfo?.child;
 
   const [dailyPrompt, setDailyPrompt] = useState("");
-  const [isLoadingPrompt, setIsLoadingPrompt] = useState(true);
+  const [, setIsLoadingPrompt] = useState(true);
   const [recentEntries, setRecentEntries] = useState<DiaryEntry[]>([]);
 
   const fetchData = useCallback(async () => {
