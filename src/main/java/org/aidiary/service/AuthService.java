@@ -7,6 +7,7 @@ import org.aidiary.dto.request.SignUpRequest;
 import org.aidiary.dto.response.AuthResponse;
 import org.aidiary.entity.Role;
 import org.aidiary.entity.User;
+import org.aidiary.exception.DuplicateResourceException;
 import org.aidiary.exception.ResourceNotFoundException;
 import org.aidiary.repository.UserRepository;
 import org.aidiary.security.JwtTokenProvider;
@@ -27,11 +28,11 @@ public class AuthService {
         @Transactional
         public AuthResponse signUp(SignUpRequest request) {
                 if (userRepository.existsByUsername(request.getUsername())) {
-                        throw new RuntimeException("이미 존재하는 사용자 이름입니다.");
+                        throw new DuplicateResourceException("사용자", "username");
                 }
 
                 if (userRepository.existsByEmail(request.getEmail())) {
-                        throw new RuntimeException("이미 존재하는 이메일입니다.");
+                        throw new DuplicateResourceException("이메일", "email");
                 }
 
                 User user = User.builder()

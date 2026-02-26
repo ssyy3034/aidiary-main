@@ -8,7 +8,7 @@ python-dotenv
 keybert
 kiwipiepy
 google-genai
-mediapipe
+mediapipe==0.10.9
 opencv-python-headless
 numpy
 langgraph

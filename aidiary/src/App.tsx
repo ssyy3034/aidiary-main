@@ -132,10 +132,20 @@ const AppContent: React.FC = () => {
       alert("회원가입이 완료되었습니다.");
       await handleLogin(username, password);
     } catch (error: any) {
-      const message =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        "회원가입에 실패했습니다.";
+      const errorCode = error.response?.data?.errorCode;
+      const serverMessage = error.response?.data?.message;
+      let message: string;
+
+      if (errorCode === "DUPLICATE_RESOURCE") {
+        message = serverMessage || "이미 존재하는 계정입니다.";
+      } else if (errorCode === "VALIDATION_ERROR") {
+        message = serverMessage || "입력값을 확인해주세요.";
+      } else if (serverMessage && errorCode !== "INTERNAL_ERROR") {
+        message = serverMessage;
+      } else {
+        message = "회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.";
+      }
+
       setError(message);
       alert(message);
     } finally {
