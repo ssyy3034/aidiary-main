@@ -115,8 +115,12 @@ export const diaryAiApi = {
 export const imageApi = {
   analyze: (formData: FormData) =>
     apiClient.post("/api/images/analyze", formData, {
+      timeout: 120000,
+    }),
+  getStatus: (jobId: string) => apiClient.get(`/api/images/status/${jobId}`),
+  getResult: (jobId: string) =>
+    apiClient.get(`/api/images/result/${jobId}`, {
       responseType: "blob",
-      timeout: 120000, // 이미지 처리는 시간이 오래 걸릴 수 있음
     }),
 };
 

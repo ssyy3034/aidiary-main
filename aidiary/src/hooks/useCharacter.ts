@@ -66,6 +66,7 @@ export const useCharacter = (
         characterData.characterImage?.toUpperCase().includes("<!DOCTYPE") ||
         characterData.characterImage?.toUpperCase().includes("<HTML") ||
         characterData.characterImage?.includes("data:text/html") ||
+        characterData.characterImage?.includes("data:application/json") ||
         (characterData.characterImage?.startsWith("data:image") &&
           atob(characterData.characterImage.split(",")[1])
             .toUpperCase()
@@ -131,21 +132,48 @@ export const useCharacter = (
           compressImage(parent2File),
         ]);
 
-        setStatus("분석 중... (최적화된 이미지 전송)");
+        setStatus("분석 요청 전송 중...");
         setIsLoading(true);
         setGeneratedImage(null);
 
         const formData = new FormData();
-        // 원본 대신 압축된 Blob 전송
         formData.append("parent1", compressedParent1, parent1File.name);
         formData.append("parent2", compressedParent2, parent2File.name);
 
-        const response = await imageApi.analyze(formData);
+        // 1단계: 분석 작업 제출 → jobId 받기
+        const submitResponse = await imageApi.analyze(formData);
+        const jobId = submitResponse.data?.jobId;
+        if (!jobId) {
+          throw new Error("작업 ID를 받지 못했습니다.");
+        }
 
-        // ===== 🛡️ Integrity Validation =====
-        // CloudFront 에러 페이지(HTML)가 이미지로 오해받아 저장되는 것을 방지합니다.
-        const blob = response.data;
-        if (blob.type.includes("text/html")) {
+        // 2단계: 작업 상태 폴링
+        setStatus("캐릭터 생성 중...");
+        let done = false;
+        while (!done) {
+          await new Promise((r) => setTimeout(r, 3000)); // 3초 대기
+          const statusRes = await imageApi.getStatus(jobId);
+          const jobStatus = statusRes.data?.status;
+
+          if (jobStatus === "DONE") {
+            done = true;
+          } else if (jobStatus === "FAILED") {
+            const errorMsg =
+              statusRes.data?.error || "이미지 생성에 실패했습니다.";
+            throw new Error(errorMsg);
+          }
+          // PENDING/PROCESSING → 계속 폴링
+        }
+
+        // 3단계: 결과 이미지 가져오기
+        setStatus("이미지 불러오는 중...");
+        const resultResponse = await imageApi.getResult(jobId);
+        const blob = resultResponse.data;
+
+        if (
+          blob.type.includes("text/html") ||
+          blob.type.includes("application/json")
+        ) {
           throw new Error(
             "이미지 생성 서버 응답에 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
           );
@@ -155,8 +183,6 @@ export const useCharacter = (
         const base64Image = await blobToBase64(blob);
         setGeneratedImage(imageUrl);
         setStatus("캐릭터 생성 성공!");
-
-        // ... (이후 로직은 동일)
 
         const newCharacter: CharacterData = {
           childName,
