@@ -12,10 +12,8 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8080";
  */
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  timeout: 30000, // 30초
+  headers: {},
+  timeout: 120000, // 120초 (t3.small에서의 이미지 생성 소요 시간 고려)
 });
 
 /**
@@ -102,7 +100,11 @@ export const diaryAiApi = {
   analyzeEmotion: (prompt: string) =>
     apiClient.post("/api/diary-ai/emotion-analysis", { prompt }),
   generateDrawing: (diaryText: string) =>
-    apiClient.post("/api/diary-ai/drawing", { diary_text: diaryText }, { timeout: 120000 }),
+    apiClient.post(
+      "/api/diary-ai/drawing",
+      { diary_text: diaryText },
+      { timeout: 120000 },
+    ),
   getImageUrl: (filename: string) =>
     `${API_BASE_URL}/api/diary-ai/images/${filename}`,
 };
@@ -113,9 +115,8 @@ export const diaryAiApi = {
 export const imageApi = {
   analyze: (formData: FormData) =>
     apiClient.post("/api/images/analyze", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
       responseType: "blob",
-      timeout: 60000, // 이미지 처리는 시간이 오래 걸릴 수 있음
+      timeout: 120000, // 이미지 처리는 시간이 오래 걸릴 수 있음
     }),
 };
 

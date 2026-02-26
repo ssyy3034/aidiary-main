@@ -74,16 +74,8 @@ public class AuthController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request) {
-        try {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return ResponseEntity.badRequest().body("유효하지 않은 인증 헤더입니다.");
-            }
-
-            return ResponseEntity.ok("로그아웃 성공");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("로그아웃 실패: " + e.getMessage());
-        }
+    public ResponseEntity<?> logout() {
+        log.info("로그아웃 요청 수신");
+        return ResponseEntity.ok("로그아웃 성공");
     }
 }

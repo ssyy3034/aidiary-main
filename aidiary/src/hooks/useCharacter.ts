@@ -142,8 +142,17 @@ export const useCharacter = (
 
         const response = await imageApi.analyze(formData);
 
-        const imageUrl = URL.createObjectURL(response.data);
-        const base64Image = await blobToBase64(response.data);
+        // ===== 🛡️ Integrity Validation =====
+        // CloudFront 에러 페이지(HTML)가 이미지로 오해받아 저장되는 것을 방지합니다.
+        const blob = response.data;
+        if (blob.type.includes("text/html")) {
+          throw new Error(
+            "이미지 생성 서버 응답에 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+          );
+        }
+
+        const imageUrl = URL.createObjectURL(blob);
+        const base64Image = await blobToBase64(blob);
         setGeneratedImage(imageUrl);
         setStatus("캐릭터 생성 성공!");
 
