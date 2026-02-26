@@ -150,7 +150,10 @@ export const useCharacter = (
         // 2단계: 작업 상태 폴링
         setStatus("캐릭터 생성 중...");
         let done = false;
-        while (!done) {
+        const MAX_POLLS = 40; // 3초 × 40 = 최대 2분
+        let pollCount = 0;
+        while (!done && pollCount < MAX_POLLS) {
+          pollCount++;
           await new Promise((r) => setTimeout(r, 3000)); // 3초 대기
           const statusRes = await imageApi.getStatus(jobId);
           const jobStatus = statusRes.data?.status;
@@ -163,6 +166,11 @@ export const useCharacter = (
             throw new Error(errorMsg);
           }
           // PENDING/PROCESSING → 계속 폴링
+        }
+        if (!done) {
+          throw new Error(
+            "이미지 생성 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.",
+          );
         }
 
         // 3단계: 결과 이미지 가져오기
