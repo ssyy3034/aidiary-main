@@ -49,10 +49,8 @@ public class ImageConsumer {
             imageJobStore.complete(jobId, result);
             log.info("✅ Image job {} completed via RabbitMQ", jobId);
         } catch (Exception e) {
-            imageJobStore.fail(jobId, e.getMessage());
             log.error("❌ Image job {} failed: {}", jobId, e.getMessage());
-            // 예외를 던지지 않으면 ACK 처리됨 (DLQ로 가지 않음)
-            // 재시도가 필요한 경우 예외를 throw하면 DLQ로 이동
+            imageJobStore.fail(jobId, e.getMessage());
         }
     }
 
