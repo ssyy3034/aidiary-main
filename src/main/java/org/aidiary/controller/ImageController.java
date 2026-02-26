@@ -72,9 +72,13 @@ public class ImageController {
         }
         JobResult job = jobOpt.get();
         return switch (job.status()) {
-            case DONE -> ResponseEntity.ok()
-                    .contentType(MediaType.IMAGE_PNG)
-                    .body(job.imageBytes());
+            case DONE -> {
+                // 클라이언트 수신 즉시 메모리 해제 — TTL 10분 대기 불필요
+                imageJobStore.remove(jobId);
+                yield ResponseEntity.ok()
+                        .contentType(MediaType.IMAGE_PNG)
+                        .body(job.imageBytes());
+            }
             case FAILED -> ResponseEntity.<byte[]>internalServerError().build();
             default -> ResponseEntity.<byte[]>accepted().build(); // 아직 처리 중
         };

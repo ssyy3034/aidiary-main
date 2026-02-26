@@ -56,7 +56,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/diary/**").authenticated()
                         .requestMatchers("/api/child/**").authenticated()
                         .requestMatchers("/api/chat/**").authenticated()
-                        .requestMatchers("/api/images/analyze").authenticated()
+                        .requestMatchers("/api/images/**").authenticated()
                         // 나머지는 인증 필요
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

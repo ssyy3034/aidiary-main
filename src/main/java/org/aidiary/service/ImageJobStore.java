@@ -53,6 +53,14 @@ public class ImageJobStore {
     }
 
     /**
+     * 클라이언트가 결과를 수신한 후 즉시 제거.
+     * TTL cleanup은 안전망으로 남긴다 (클라이언트가 결과를 안 가져갈 경우 대비).
+     */
+    public void remove(String jobId) {
+        store.remove(jobId);
+    }
+
+    /**
      * 메모리 누수 방지: TTL_MINUTES를 초과한 Job을 정리한다.
      * ConcurrentHashMap에 strong reference로 유지되는 byte[]는
      * GC 대상이 되지 않으므로, 명시적으로 제거해야 한다.
