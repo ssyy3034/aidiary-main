@@ -1,11 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { THEME_COLORS } from '../common/FormInput';
+import CharacterCanvas from './CharacterCanvas';
 
 interface CharacterDisplayProps {
     childName: string;
     childBirthday: string;
     imageUrl: string;
+    imageBase64?: string;
 }
 
 /**
@@ -15,6 +17,7 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({
     childName,
     childBirthday,
     imageUrl,
+    imageBase64,
 }) => {
     const { sub: subColor } = THEME_COLORS;
 
@@ -76,23 +79,20 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({
                     style={{ background: 'rgba(255, 240, 230, 0.3)' }}
                 />
 
-                {/* 떠오르는 캐릭터 */}
-                <motion.img
-                    src={imageUrl}
-                    alt="우리 아이 캐릭터"
-                    className="w-full max-w-[300px] mx-auto rounded-3xl cursor-pointer"
-                    style={{ boxShadow: '0 8px 30px rgba(194, 103, 90, 0.2)' }}
-                    animate={{
-                        y: [0, -10, 0],
-                        scale: [1, 1.015, 1],
-                    }}
-                    transition={{
-                        duration: 3.5,
-                        ease: 'easeInOut',
-                        repeat: Infinity,
-                        repeatType: 'loop',
-                    }}
-                />
+                {/* 떠오르는 캐릭터 + 눈 애니메이션 */}
+                <motion.div
+                    className="inline-block max-w-[300px] w-full"
+                    animate={{ y: [0, -10, 0], scale: [1, 1.015, 1] }}
+                    transition={{ duration: 3.5, ease: 'easeInOut', repeat: Infinity, repeatType: 'loop' }}
+                >
+                    <CharacterCanvas
+                        imageUrl={imageUrl}
+                        imageBase64={imageBase64 ?? ''}
+                        alt="우리 아이 캐릭터"
+                        className="w-full rounded-3xl block"
+                        style={{ boxShadow: '0 8px 30px rgba(194, 103, 90, 0.2)' }}
+                    />
+                </motion.div>
 
                 {/* 바닥 그림자 — 캐릭터가 뜰수록 작아짐 */}
                 <motion.div

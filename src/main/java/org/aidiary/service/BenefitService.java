@@ -29,11 +29,9 @@ public class BenefitService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
-        // Get all benefits that are recommended for the current week or earlier
-        // It's good to show benefits they might have missed, or ones currently active.
-        List<Benefit> benefits = benefitRepository.findByRecommendedWeekStartLessThanEqualAndRecommendedWeekEndGreaterThanEqualOrderByRecommendedWeekStartAsc(week, week);
+        List<Benefit> benefits = benefitRepository
+                .findByRecommendedWeekStartLessThanEqualAndRecommendedWeekEndGreaterThanEqualOrderByRecommendedWeekStartAsc(week, week);
 
-        // Fetch user's checks to see what they have completed
         List<BenefitCheck> checks = benefitCheckRepository.findByUser(user);
         Map<Long, Boolean> checkMap = checks.stream()
                 .collect(Collectors.toMap(c -> c.getBenefit().getId(), BenefitCheck::isCompleted));

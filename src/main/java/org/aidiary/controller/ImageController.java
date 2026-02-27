@@ -110,6 +110,16 @@ public class ImageController {
 
         log.info("📥 Webhook 수신: jobId={}, status={}", jobId, status);
 
+        // 멱등성 가드: RabbitMQ at-least-once delivery로 인한 중복 webhook 방지
+        var existingJob = imageJobStore.get(jobId);
+        if (existingJob.isPresent()) {
+            Status existingStatus = existingJob.get().status();
+            if (existingStatus == Status.DONE || existingStatus == Status.FAILED) {
+                log.info("[Idempotency] Job {} already {}, ignoring duplicate webhook", jobId, existingStatus);
+                return ResponseEntity.ok().build();
+            }
+        }
+
         if ("SUCCESS".equalsIgnoreCase(status) && image != null) {
             try {
                 imageJobStore.complete(jobId, image.getBytes());

@@ -65,6 +65,7 @@ public class AuthService {
                                 .build();
         }
 
+        @Transactional(readOnly = true)
         public AuthResponse login(LoginRequest request) {
                 // 1. 사용자 조회 (보안을 위해 예외 메시지 통일)
                 User user = userRepository.findByUsername(request.getUsername())

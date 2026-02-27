@@ -65,6 +65,12 @@ dependencies {
     // RabbitMQ
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
 
+    // Redis (Lettuce client + Spring Cache abstraction)
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // Caffeine (L1 로컬 캐시 — Hot Key 방어)
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+
     // Jackson - Spring Boot manages versions (do NOT pin manually; causes JSR-310 mismatch)
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 

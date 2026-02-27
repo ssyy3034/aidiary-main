@@ -45,6 +45,16 @@ public class DiaryAiController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/face-landmarks")
+    public ResponseEntity<Map<String, Object>> getFaceLandmarks(@RequestBody Map<String, String> request) {
+        String image = request.get("image");
+        if (image == null || image.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        Map<String, Object> result = diaryAiService.getFaceLandmarks(image);
+        return ResponseEntity.ok(result);
+    }
+
     @GetMapping("/images/{filename}")
     public ResponseEntity<byte[]> getImage(@PathVariable String filename) {
         // Path Traversal 방어: 경로 구분자 포함 시 거부

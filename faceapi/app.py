@@ -6,6 +6,7 @@ from config import Config
 from routes.analysis_routes import analysis_bp
 from routes.chat_routes import chat_bp
 from routes.personality_routes import personality_bp
+from routes.pregnancy_routes import pregnancy_bp
 
 # .env 파일 로드
 load_dotenv()
@@ -23,6 +24,7 @@ os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 app.register_blueprint(analysis_bp)
 app.register_blueprint(chat_bp)
 app.register_blueprint(personality_bp)
+app.register_blueprint(pregnancy_bp)
 
 # Serve generated images
 @app.route('/api/images/<filename>')

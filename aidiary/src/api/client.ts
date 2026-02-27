@@ -102,6 +102,8 @@ export const diaryAiApi = {
   getDailyQuestion: () => apiClient.get("/api/diary-ai/daily-question"),
   analyzeEmotion: (prompt: string) =>
     apiClient.post("/api/diary-ai/emotion-analysis", { prompt }),
+  getFaceLandmarks: (image: string) =>
+    apiClient.post("/api/diary-ai/face-landmarks", { image }),
   generateDrawing: (diaryText: string) =>
     apiClient.post(
       "/api/diary-ai/drawing",

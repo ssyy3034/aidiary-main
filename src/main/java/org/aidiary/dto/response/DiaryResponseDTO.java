@@ -1,13 +1,17 @@
 package org.aidiary.dto.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.aidiary.entity.Diary;
 
 import java.time.LocalDateTime;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor  // JPQL constructor expression 용 (new DiaryResponseDTO(...))
 public class DiaryResponseDTO {
     private Long id;
     private String title;

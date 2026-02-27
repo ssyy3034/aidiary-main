@@ -48,7 +48,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**")
                         .permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info", "/actuator/metrics/**").permitAll()
                         .requestMatchers("/actuator/**").authenticated()
                         .requestMatchers("/api/diary-ai/daily-question").permitAll()
                         .requestMatchers("/api/diary-ai/images/**").permitAll()
@@ -57,7 +57,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/diary/**").authenticated()
                         .requestMatchers("/api/child/**").authenticated()
                         .requestMatchers("/api/chat/**").authenticated()
-                        .requestMatchers("/api/images/webhook").permitAll() // Added webhook endpoint
+                        .requestMatchers("/api/images/webhook", "/api/images/status/**").permitAll()
                         .requestMatchers("/api/images/**").authenticated()
                         .requestMatchers("/api/fetal-movement/**").authenticated()
                         .requestMatchers("/api/health/**").authenticated()

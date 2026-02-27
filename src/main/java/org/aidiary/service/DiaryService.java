@@ -44,10 +44,10 @@ public class DiaryService {
 
     @Transactional
     public DiaryResponseDTO updateDiary(Long id, CreateDiaryDTO dto, Long userId) {
-        Diary diary = diaryRepository.findById(id)
+        // findWithUserById: @EntityGraph로 user를 함께 로딩 → 소유권 확인 쿼리 1회
+        Diary diary = diaryRepository.findWithUserById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Diary", id));
 
-        // 소유자 검증: 본인의 일기만 수정 가능
         if (!diary.getUser().getId().equals(userId)) {
             throw new SecurityException("본인의 일기만 수정할 수 있습니다.");
         }
@@ -61,7 +61,7 @@ public class DiaryService {
 
     @Transactional
     public DiaryResponseDTO updateEmotion(Long id, String emotion, Long userId) {
-        Diary diary = diaryRepository.findById(id)
+        Diary diary = diaryRepository.findWithUserById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Diary", id));
 
         if (!diary.getUser().getId().equals(userId)) {
@@ -74,10 +74,9 @@ public class DiaryService {
 
     @Transactional
     public void deleteDiary(Long id, Long userId) {
-        Diary diary = diaryRepository.findById(id)
+        Diary diary = diaryRepository.findWithUserById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Diary", id));
 
-        // 소유자 검증: 본인의 일기만 삭제 가능
         if (!diary.getUser().getId().equals(userId)) {
             throw new SecurityException("본인의 일기만 삭제할 수 있습니다.");
         }
@@ -87,9 +86,10 @@ public class DiaryService {
 
     @Transactional(readOnly = true)
     public Page<DiaryResponseDTO> getDiariesByUser(Long userId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        // Pageable의 sort는 JPQL에서 ORDER BY로 처리하므로 여기서는 page/size만 사용
+        Pageable pageable = PageRequest.of(page, size);
 
-        return diaryRepository.findAllByUserId(userId, pageable)
-                .map(DiaryResponseDTO::fromEntity);
+        // DTO Projection: Entity 미생성, 필요한 컬럼만 SELECT, JOIN 없음
+        return diaryRepository.findDiaryDTOsByUserId(userId, pageable);
     }
 }

@@ -23,6 +23,7 @@ RABBITMQ_PORT = int(os.environ.get('RABBITMQ_PORT', 5672))
 RABBITMQ_USER = os.environ.get('RABBITMQ_DEFAULT_USER', 'guest')
 RABBITMQ_PASS = os.environ.get('RABBITMQ_DEFAULT_PASS', 'guest')
 WEBHOOK_URL = os.environ.get('SPRING_WEBHOOK_URL', 'http://host.docker.internal:8080/api/images/webhook')
+SPRING_BASE_URL = WEBHOOK_URL.rsplit('/api/images/webhook', 1)[0]
 QUEUE_NAME = 'image-processing'
 
 # Lazy load ImageGenerator to save memory on boot if needed
@@ -36,6 +37,16 @@ def get_image_generator():
         image_generator = ImageGenerator()
     return image_generator
 
+def check_already_processed(job_id):
+    """멱등성 가드: Spring Boot에 status를 조회해 이미 완료된 작업인지 확인."""
+    try:
+        resp = requests.get(f"{SPRING_BASE_URL}/api/images/status/{job_id}", timeout=3)
+        if resp.status_code == 200:
+            return resp.json().get('status') in ('DONE', 'FAILED')
+    except Exception as e:
+        logger.warning(f"[Idempotency] Status check failed for {job_id}: {e}")
+    return False
+
 def process_message(ch, method, properties, body):
     job_id = "UNKNOWN"
     try:
@@ -45,6 +56,12 @@ def process_message(ch, method, properties, body):
         job_id = message_data.get('jobId')
 
         logger.info(f"📥 Received Job: {job_id}")
+
+        # 멱등성 가드: RabbitMQ at-least-once delivery로 인한 중복 처리 방지 (~30초 연산 낭비 차단)
+        if check_already_processed(job_id):
+            logger.info(f"[Idempotency] Job {job_id} already processed. ACK and skip.")
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+            return
 
         # Base64 인코딩된 파일 바이트 디코딩 임시 저장 파일로 변환
         parent1_bytes = base64.b64decode(message_data.get('parent1Bytes'))

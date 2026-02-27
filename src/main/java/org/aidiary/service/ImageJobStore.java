@@ -64,6 +64,10 @@ public class ImageJobStore {
 
     public void complete(String jobId, byte[] imageBytes) {
         var existing = store.get(jobId);
+        if (existing != null && existing.status() == Status.DONE) {
+            log.info("[Idempotency] Job {} already DONE, skipping duplicate complete()", jobId);
+            return;
+        }
         Instant created = (existing != null) ? existing.createdAt() : Instant.now();
         store.put(jobId, new JobResult(Status.DONE, imageBytes, null, created));
     }
