@@ -1,4 +1,5 @@
 import json
+import re
 import traceback
 from flask import Blueprint, request, jsonify
 from openai import OpenAI
@@ -106,7 +107,8 @@ def get_daily_question():
                     max_tokens=60
                 )
 
-                question = response.choices[0].message.content.strip().replace('"', '')
+                question = response.choices[0].message.content.strip()
+                question = re.sub(r'[*_\"\'`]', '', question).strip()
                 print(f"[INFO] 오늘의 질문 생성됨 (OpenAI): {question}")
                 return jsonify({"question": question})
 
@@ -139,7 +141,9 @@ def get_daily_question():
                 )
 
                 if response and response.text:
-                    question = response.text.strip().replace('"', '')
+                    question = response.text.strip()
+                    # Strip quotes and common markdown like ** or *
+                    question = re.sub(r'[*_\"\'`]', '', question).strip()
                     print(f"[INFO] 오늘의 질문 생성됨 (Gemini): {question}")
                     return jsonify({"question": question})
             except Exception as e:
