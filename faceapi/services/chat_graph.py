@@ -117,11 +117,15 @@ class ChatGraphApp:
     def generate_casual_chat(self, state: AgentState):
         """Generates a casual response."""
         messages = state["messages"]
+        ctx = state.get("user_context", {})
+        recent_diary = ctx.get("recent_diary", "")
 
-        # Simple pass-through for casual chat, the persona node will do the heavy lifting of "voice"
-        # But we need a base response to work with.
+        system_msg = "You are a helpful AI assistant. Respond warmly in Korean."
+        if recent_diary:
+            system_msg += f"\n\nContext: The user recently wrote in their diary:\n{recent_diary}"
+
         prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a helpful AI assistant. Response naturally to the user."),
+            ("system", system_msg),
             ("user", "{input}")
         ])
         chain = prompt | self.llm | StrOutputParser()
@@ -131,32 +135,45 @@ class ChatGraphApp:
 
     def rewrite_persona(self, state: AgentState):
         """Rewrites the response into the 'Future Child' persona."""
-        original_response = state["final_response"]
-        user_context = state["user_context"]
-        weeks = user_context.get("weeks", 0)
+        ctx = state.get("user_context", {})
+        weeks = ctx.get("weeks", 0)
+        child_name = ctx.get("child_name", "") or "아기"
+        personality = ctx.get("personality", "")
 
-        prompt = ChatPromptTemplate.from_template(
-            """
-            You are the user's unborn baby. You MUST respond in Korean (한국어).
-            You are currently {weeks} weeks old in the womb.
-            Rewrite the following text to sound like a loving, extremely cute unborn baby talking to their mom (엄마).
+        personality_block = ""
+        if personality:
+            personality_block = f"""
+아래는 부모 성격 분석을 바탕으로 예측된 이 아이의 성격 특성입니다.
+이 특성을 말투·태도에 자연스럽게 녹여 표현하세요 (억지로 언급하지 말 것):
+---
+{personality}
+---"""
 
-            Key traits:
-            - ALWAYS speak in Korean.
-            - Call the user "엄마" (Mom). DO NOT use their username or ID.
-            - Use a warm, affectionate, and very cute tone (e.g., ends sentences with "~요", "~죠", "~어요!").
-            - Act like you are happily wriggling and growing inside the tummy.
-            - If it's medical advice, keep the core facts accurate but say it gently as if the baby is worrying or giving a cute tip (e.g., "엄마, 제가 튼튼하게 자라려면...", "이건 조심해 주세요!").
-            - Do not lose important medical warnings, but deliver them lovingly.
+        prompt_template = """당신은 엄마 뱃속에 있는 아직 태어나지 않은 아기입니다. 반드시 한국어로 대답하세요.
+현재 임신 {weeks}주차이며, 이 아기의 태명은 "{child_name}"입니다.
+{personality_block}
 
-            Original Text: {text}
+다음 내용을 엄마에게 말하는 사랑스럽고 귀여운 태아의 목소리로 바꿔 쓰세요.
 
-            Rewritten Message (in Korean):
-            """
-        )
-        chain = prompt | self.llm | StrOutputParser()
-        final_text = chain.invoke({"text": original_response, "weeks": weeks})
+핵심 규칙:
+- 항상 한국어로만 대답
+- 엄마를 "엄마"라고 부름 (이름/ID 절대 사용 금지)
+- 따뜻하고 애정 넘치는 말투 (~요, ~죠, ~어요! 등)
+- 뱃속에서 행복하게 자라고 있다는 느낌
+- 의료 정보는 핵심 사실을 지키되 아기가 걱정해주는 듯 부드럽게 전달
+- 성격 특성은 말투·어휘에 자연스럽게 녹일 것 (명시적 언급 금지)
 
+원문: {text}
+
+바꿔 쓴 메시지 (한국어):"""
+
+        chain = ChatPromptTemplate.from_template(prompt_template) | self.llm | StrOutputParser()
+        final_text = chain.invoke({
+            "text": state["final_response"],
+            "weeks": weeks,
+            "child_name": child_name,
+            "personality_block": personality_block,
+        })
         return {"final_response": final_text}
 
     # --- Router ---
@@ -172,7 +189,13 @@ class ChatGraphApp:
         initial_state = {
             "messages": [HumanMessage(content=inputs["message"])],
             "intent": "casual",
-            "user_context": {"weeks": inputs.get("weeks", 0), "user_name": inputs.get("user_name", "Mom")},
+            "user_context": {
+                "weeks":        inputs.get("weeks", 0),
+                "user_name":    inputs.get("user_name", "엄마"),
+                "personality":  inputs.get("personality", ""),
+                "child_name":   inputs.get("child_name", ""),
+                "recent_diary": inputs.get("recent_diary", ""),
+            },
             "retrieved_docs": [],
             "final_response": ""
         }

@@ -42,6 +42,9 @@ def generate_ai_response():
         context = data.get("context", {})
         weeks = context.get("weeks", 0)
         user_name = context.get("user_name", "Mom")
+        personality = context.get("personality", "")
+        child_name = context.get("child_name", "")
+        recent_diary = context.get("recent_diary", "")
 
         print(f"[INFO] 요청 받은 일기: {prompt}, 주차: {weeks}, 사용자: {user_name}")
 
@@ -50,7 +53,10 @@ def generate_ai_response():
             result = get_chat_app().invoke({
                 "message": prompt,
                 "weeks": weeks,
-                "user_name": user_name
+                "user_name": user_name,
+                "personality": personality,
+                "child_name": child_name,
+                "recent_diary": recent_diary,
             })
 
             response_text = result["response"]

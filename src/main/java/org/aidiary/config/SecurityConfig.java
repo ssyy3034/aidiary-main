@@ -62,6 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/fetal-movement/**").authenticated()
                         .requestMatchers("/api/health/**").authenticated()
                         .requestMatchers("/api/pregnancy/**").authenticated()
+                        .requestMatchers("/api/personality/**").authenticated()
                         // 나머지는 인증 필요
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

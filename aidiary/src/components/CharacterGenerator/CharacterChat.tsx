@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import type { ChatMessage } from "../../types";
 
 interface CharacterChatProps {
@@ -15,6 +15,11 @@ const CharacterChat: React.FC<CharacterChatProps> = ({
 }) => {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isSending]);
 
   const handleSend = async () => {
     if (!input.trim() || isSending) return;
@@ -52,21 +57,35 @@ const CharacterChat: React.FC<CharacterChatProps> = ({
             <p>👶 아이에게 말을 걸어보세요!</p>
           </div>
         ) : (
-          messages.map((msg, index) => (
-            <div
-              key={index}
-              className={`w-fit max-w-[85%] px-5 py-3.5 transition-all duration-300 hover:scale-[1.01] text-[15px] leading-relaxed shadow-sm ${
-                msg.sender === "user"
-                  ? "self-end rounded-[24px_24px_4px_24px] bg-[#C67D5B] text-white"
-                  : "self-start rounded-[24px_24px_24px_4px] bg-[#F7F3ED] text-[#5C4033] border border-[#E2D9CC]/50"
-              }`}
-              style={{
-                boxShadow: "0 3px 10px rgba(0,0,0,0.05)",
-              }}
-            >
-              {msg.content}
-            </div>
-          ))
+          <>
+            {messages.map((msg, index) => (
+              <div
+                key={index}
+                className={`w-fit max-w-[85%] px-5 py-3.5 transition-all duration-300 hover:scale-[1.01] text-[15px] leading-relaxed shadow-sm ${
+                  msg.sender === "user"
+                    ? "self-end rounded-[24px_24px_4px_24px] bg-[#C67D5B] text-white"
+                    : "self-start rounded-[24px_24px_24px_4px] bg-[#F7F3ED] text-[#5C4033] border border-[#E2D9CC]/50"
+                }`}
+                style={{ boxShadow: "0 3px 10px rgba(0,0,0,0.05)" }}
+              >
+                {msg.content}
+              </div>
+            ))}
+            {isSending && (
+              <div
+                className="self-start w-fit px-5 py-3.5 rounded-[24px_24px_24px_4px] bg-[#F7F3ED] border border-[#E2D9CC]/50"
+                style={{ boxShadow: "0 3px 10px rgba(0,0,0,0.05)" }}
+              >
+                <p className="text-[12px] text-[#9C8A7A] mb-1.5">아기가 생각 중이에요...</p>
+                <div className="flex gap-1.5 items-center">
+                  <div className="w-2 h-2 rounded-full bg-[#C67D5B] opacity-60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-2 h-2 rounded-full bg-[#C67D5B] opacity-80 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-2 h-2 rounded-full bg-[#C67D5B] animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </>
         )}
       </div>
 

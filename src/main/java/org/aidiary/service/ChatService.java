@@ -27,8 +27,8 @@ public class ChatService {
     /**
      * 캐릭터 채팅 - Flask FaceAPI 서버로 요청 위임
      */
-    public ChatResponse generateCharacterResponse(ChatRequest request, String personality, int weeks, String userName,
-            String recentDiary) {
+    public ChatResponse generateCharacterResponse(ChatRequest request, String personality, String childName,
+            int weeks, String userName, String recentDiary) {
         try {
             String url = flaskApiUrl + "/api/openai";
             log.info("Requesting chat response from Flask API: {}", url);
@@ -50,12 +50,9 @@ public class ChatService {
             Map<String, Object> context = new HashMap<>();
             context.put("weeks", weeks);
             context.put("user_name", userName);
-            context.put("recent_diary", recentDiary);
-            // personality could also be passed if the python side uses it dynamicallly,
-            // but for now the python side has a 'rewrite_persona' node.
-            // We can pass it if we want the python node to use this specific personality
-            // text.
-            // context.put("personality", personality);
+            context.put("recent_diary", recentDiary != null ? recentDiary : "");
+            context.put("personality", personality != null ? personality : "");
+            context.put("child_name", childName != null ? childName : "");
 
             body.put("context", context);
 

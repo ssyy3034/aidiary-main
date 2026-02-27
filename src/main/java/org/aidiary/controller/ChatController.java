@@ -41,10 +41,12 @@ public class ChatController {
         ChildDTO child = childService.getChildByUserId(user.getId()).orElse(null);
 
         String personality = null;
+        String childName = null;
         int weeks = 0;
 
         if (child != null) {
             personality = child.getGptResponse();
+            childName = child.getChildName();
             String birthdayStr = child.getChildBirthday();
 
             if (birthdayStr != null && !birthdayStr.isBlank()) {
@@ -70,7 +72,7 @@ public class ChatController {
         }
 
         ChatResponse response = chatService.generateCharacterResponse(
-                request, personality, weeks, user.getName(), recentDiary);
+                request, personality, childName, weeks, user.getName(), recentDiary);
         return ResponseEntity.ok(response);
     }
 }

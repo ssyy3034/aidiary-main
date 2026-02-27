@@ -152,4 +152,18 @@ export const pregnancyApi = {
   getWeek: (week: number) => apiClient.get(`/api/pregnancy/${week}`),
 };
 
+export const personalityApi = {
+  chat: (data: {
+    message: string;
+    history: { role: string; content: string }[];
+    parent_label: string;
+    turn_count: number;
+  }) => apiClient.post("/api/personality/chat", data),
+
+  synthesize: (data: {
+    parent1_history: { role: string; content: string }[];
+    parent2_history: { role: string; content: string }[];
+  }) => apiClient.post("/api/personality/synthesize", data),
+};
+
 export default apiClient;
