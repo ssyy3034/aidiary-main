@@ -1,6 +1,6 @@
 package org.aidiary.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.aidiary.dto.CreateDiaryDTO;
 import org.aidiary.dto.response.DiaryResponseDTO;
@@ -15,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,7 +35,6 @@ public class DiaryService {
                 .title(dto.getTitle())
                 .content(dto.getContent())
                 .emotion(dto.getEmotion())
-                .createdAt(LocalDateTime.now())
                 .user(user)
                 .build();
 
@@ -74,6 +72,7 @@ public class DiaryService {
         diaryRepository.deleteById(id);
     }
 
+    @Transactional(readOnly = true)
     public Page<DiaryResponseDTO> getDiariesByUser(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 

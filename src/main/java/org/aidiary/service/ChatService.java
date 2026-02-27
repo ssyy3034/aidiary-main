@@ -1,5 +1,6 @@
 package org.aidiary.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aidiary.dto.request.ChatRequest;
 import org.aidiary.dto.response.ChatResponse;
@@ -15,12 +16,13 @@ import java.util.Map;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ChatService {
 
     @Value("${api.flask.url}")
-    private String flaskApiUrl; // Docker 내부 통신용 URL
+    private String flaskApiUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     /**
      * 캐릭터 채팅 - Flask FaceAPI 서버로 요청 위임

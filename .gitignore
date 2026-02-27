@@ -80,3 +80,5 @@ src/main/resources/static/logo192.png
 src/main/resources/static/logo512.png
 src/main/resources/static/manifest.json
 src/main/resources/static/robots.txt
+compile.log
+spring-boot.log

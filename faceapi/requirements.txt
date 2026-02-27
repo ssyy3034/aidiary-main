@@ -18,3 +18,4 @@ langchain-openai
 chromadb
 sentence-transformers
 beautifulsoup4
+pika

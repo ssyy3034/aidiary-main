@@ -7,6 +7,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import org.springframework.web.client.RestTemplate;
+
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -16,6 +18,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 @EnableAsync
 @EnableScheduling
 public class AsyncConfig {
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
 
     @Bean(name = "imageTaskExecutor")
     public Executor imageTaskExecutor() {

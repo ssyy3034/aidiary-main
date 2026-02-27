@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aidiary.dto.ChildDTO;
 import org.aidiary.entity.Child;
 import org.aidiary.entity.User;
+import org.aidiary.exception.ResourceNotFoundException;
 import org.aidiary.mapper.ChildMapper;
 import org.aidiary.repository.ChildRepository;
 import org.aidiary.repository.UserRepository;
@@ -29,7 +30,7 @@ public class ChildService {
         log.debug("📥 [ChildService] 받은 ChildDTO: {}", childDto);
 
         User user = userRepository.findById(childDto.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + childDto.getUserId()));
+                .orElseThrow(() -> new ResourceNotFoundException("User", childDto.getUserId()));
         log.debug("✅ [ChildService] User 조회 성공: {}", user.getUsername());
 
         Child child = childRepository.findById(user.getId())
@@ -43,6 +44,7 @@ public class ChildService {
         return childMapper.toDto(saved);
     }
 
+    @Transactional(readOnly = true)
     public Optional<ChildDTO> getChildByUserId(Long id) {
         return childRepository.findById(id)
                 .map(childMapper::toDto);

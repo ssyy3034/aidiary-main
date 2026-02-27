@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -32,7 +33,7 @@ public class ImageService {
     private final ImageJobStore imageJobStore;
     private final RabbitTemplate rabbitTemplate;
     private final org.springframework.amqp.rabbit.core.RabbitAdmin rabbitAdmin;
-    private final RestTemplateHolder restTemplateHolder = new RestTemplateHolder();
+    private final RestTemplate restTemplate;
 
     /**
      * RabbitMQ를 통한 비동기 이미지 분석 요청.
@@ -91,7 +92,7 @@ public class ImageService {
         body.add("parent2", new FileSystemResource(parent2Name, parent2Bytes));
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-        ResponseEntity<byte[]> response = restTemplateHolder.template.postForEntity(url, requestEntity, byte[].class);
+        ResponseEntity<byte[]> response = restTemplate.postForEntity(url, requestEntity, byte[].class);
 
         if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody();
@@ -121,8 +122,4 @@ public class ImageService {
         }
     }
 
-    // RestTemplate을 final field로 유지하기 위한 홀더
-    private static class RestTemplateHolder {
-        final org.springframework.web.client.RestTemplate template = new org.springframework.web.client.RestTemplate();
-    }
 }

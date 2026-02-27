@@ -58,13 +58,11 @@ public class JwtTokenProvider {
 
         String username = claims.getSubject();
 
-        // 진짜 User 엔티티를 DB에서 조회
+        // @AuthenticationPrincipal User 주입을 위해 User 엔티티 로드
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + username));
 
-        Collection<? extends GrantedAuthority> authorities = user.getAuthorities();
-
-        return new UsernamePasswordAuthenticationToken(user, token, authorities);
+        return new UsernamePasswordAuthenticationToken(user, token, user.getAuthorities());
     }
 
     public Long getUserIdFromToken(String token) {

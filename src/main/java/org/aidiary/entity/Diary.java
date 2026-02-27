@@ -3,20 +3,17 @@ package org.aidiary.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
-public class Diary {
-
+public class Diary extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // ✅ 고유 ID
+    private Long id;
 
     @Column(nullable = false)
     private String title;
@@ -27,10 +24,7 @@ public class Diary {
     @Column(nullable = false)
     private String emotion;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false) // FK로 user_id 사용
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }

@@ -1,5 +1,6 @@
 package org.aidiary.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -11,12 +12,13 @@ import java.util.Map;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class DiaryAiService {
 
     @Value("${api.flask.url}")
     private String flaskApiUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     @SuppressWarnings("unchecked")
     public Map<String, String> getDailyQuestion() {

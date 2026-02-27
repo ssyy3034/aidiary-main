@@ -38,6 +38,7 @@ services:
 
   face-api:
     build: ./faceapi
+    image: aidiary-main-face-api
     env_file:
       - .env
     ports:
@@ -67,6 +68,23 @@ services:
     restart: unless-stopped
     depends_on:
       - prometheus
+
+  face-worker:
+    image: aidiary-main-face-api
+    command: ["python", "-u", "worker.py"]
+    depends_on:
+      face-api:
+        condition: service_started
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - PYTHONUNBUFFERED=1
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS:-guest}
+      - SPRING_WEBHOOK_URL=http://aidiary-app:8080/api/images/webhook
+    # No network block unless aidiary-network is defined globally
 
 volumes:
   mariadb_data:

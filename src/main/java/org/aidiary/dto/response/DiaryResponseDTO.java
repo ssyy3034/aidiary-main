@@ -14,6 +14,7 @@ public class DiaryResponseDTO {
     private String content;
     private String emotion;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static DiaryResponseDTO fromEntity(Diary diary) {
         return DiaryResponseDTO.builder()
@@ -22,6 +23,7 @@ public class DiaryResponseDTO {
                 .content(diary.getContent())
                 .emotion(diary.getEmotion())
                 .createdAt(diary.getCreatedAt())
+                .updatedAt(diary.getUpdatedAt())
                 .build();
     }
 }

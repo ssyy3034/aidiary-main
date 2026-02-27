@@ -42,7 +42,6 @@ public class DiaryMapper {
                 .title(dto.getTitle())
                 .content(dto.getContent())
                 .emotion(dto.getEmotion())
-                .createdAt(LocalDateTime.now())
                 .user(user)
                 .build();
     }

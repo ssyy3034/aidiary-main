@@ -1,6 +1,6 @@
 package org.aidiary.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.aidiary.dto.ChildUpdateDTO;
 import org.aidiary.dto.UpdateProfileDTO;
@@ -9,7 +9,6 @@ import org.aidiary.entity.User;
 import org.aidiary.exception.ResourceNotFoundException;
 import org.aidiary.repository.ChildRepository;
 import org.aidiary.repository.UserRepository;
-import org.aidiary.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,13 +23,11 @@ public class UserService {
     private final UserRepository userRepository;
     private final ChildRepository childRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     @Transactional
-    public void updateProfile(String token, UpdateProfileDTO dto) {
-        String username = jwtTokenProvider.getUsernameFromToken(token);
+    public void updateProfile(String username, UpdateProfileDTO dto) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", username));
 
@@ -61,6 +58,7 @@ public class UserService {
         userRepository.save(user); // 변경사항 저장
     }
 
+    @Transactional(readOnly = true)
     public User findByUsername(String userName) {
         logger.info("사용자명으로 사용자 찾기: {}", userName);
         try {

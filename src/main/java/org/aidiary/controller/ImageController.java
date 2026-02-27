@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
 import java.util.Map;
@@ -94,5 +95,33 @@ public class ImageController {
             case FAILED -> ResponseEntity.<byte[]>internalServerError().build();
             default -> ResponseEntity.<byte[]>accepted().build(); // 아직 처리 중
         };
+    }
+
+    /**
+     * Python Face API 워커가 작업 처리 후 결과를 송신하는 Webhook.
+     * 외부 퍼블릭 접근을 막기 위해 시큐리티 설정이나 내부망 전용 IP 필터링 권장.
+     */
+    @PostMapping("/webhook")
+    public ResponseEntity<Void> receiveWebhook(
+            @RequestParam("jobId") String jobId,
+            @RequestParam("status") String status,
+            @RequestParam(value = "image", required = false) MultipartFile image,
+            @RequestParam(value = "error", required = false) String error) {
+
+        log.info("📥 Webhook 수신: jobId={}, status={}", jobId, status);
+
+        if ("SUCCESS".equalsIgnoreCase(status) && image != null) {
+            try {
+                imageJobStore.complete(jobId, image.getBytes());
+            } catch (IOException e) {
+                log.error("Webhook 이미지 읽기 실패: {}", jobId, e);
+                imageJobStore.fail(jobId, "Webhook 처리 중 에러 발생");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
+        } else {
+            imageJobStore.fail(jobId, error != null ? error : "Unknown ML Error");
+        }
+
+        return ResponseEntity.ok().build();
     }
 }
