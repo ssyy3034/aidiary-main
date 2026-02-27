@@ -61,7 +61,7 @@ const CharacterChat: React.FC<CharacterChatProps> = ({
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`w-fit max-w-[85%] px-5 py-3.5 transition-all duration-300 hover:scale-[1.01] text-[15px] leading-relaxed shadow-sm ${
+                className={`w-fit max-w-[85%] px-5 py-3.5 transition-all duration-300 hover:scale-[1.01] text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap ${
                   msg.sender === "user"
                     ? "self-end rounded-[24px_24px_4px_24px] bg-[#C67D5B] text-white"
                     : "self-start rounded-[24px_24px_24px_4px] bg-[#F7F3ED] text-[#5C4033] border border-[#E2D9CC]/50"

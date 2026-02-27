@@ -7,6 +7,31 @@ from config import Config
 import random
 
 
+def strip_markdown(text: str) -> str:
+    """LLM 응답에서 마크다운 문법 기호를 제거합니다."""
+    # 헤딩 (## 제목)
+    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+    # 굵게/기울임 (***text***, **text**, *text*, __text__, _text_)
+    text = re.sub(r'\*{3}(.+?)\*{3}', r'\1', text, flags=re.DOTALL)
+    text = re.sub(r'\*{2}(.+?)\*{2}', r'\1', text, flags=re.DOTALL)
+    text = re.sub(r'\*(.+?)\*', r'\1', text, flags=re.DOTALL)
+    text = re.sub(r'_{2}(.+?)_{2}', r'\1', text, flags=re.DOTALL)
+    text = re.sub(r'_(.+?)_', r'\1', text, flags=re.DOTALL)
+    # 인라인 코드 (`code`)
+    text = re.sub(r'`(.+?)`', r'\1', text)
+    # 코드 블록 (```...```)
+    text = re.sub(r'```[\s\S]*?```', '', text)
+    # 불릿 리스트 (- item, * item)
+    text = re.sub(r'^\s*[-*]\s+', '', text, flags=re.MULTILINE)
+    # 링크 ([text](url) → text)
+    text = re.sub(r'\[(.+?)\]\(.+?\)', r'\1', text)
+    # 수평선 (--- 또는 ***)
+    text = re.sub(r'^\s*[-*]{3,}\s*$', '', text, flags=re.MULTILINE)
+    # 3개 이상 연속 빈 줄 → 2개로 정리
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
+
+
 chat_bp = Blueprint('chat', __name__)
 
 # Lazy loaded Chat Graph App
@@ -59,7 +84,7 @@ def generate_ai_response():
                 "recent_diary": recent_diary,
             })
 
-            response_text = result["response"]
+            response_text = strip_markdown(result["response"])
             intent = result["intent"]
 
             print(f"[INFO] LangGraph Output ({intent}): {response_text}")

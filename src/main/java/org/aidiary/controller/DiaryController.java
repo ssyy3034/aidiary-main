@@ -64,6 +64,16 @@ public class DiaryController {
         return diaryService.updateDiary(id, dto, user.getId());
     }
 
+    @Operation(summary = "일기 감정 업데이트", description = "AI 분석 결과로 일기의 감정을 업데이트합니다.")
+    @PatchMapping("/{id}/emotion")
+    public DiaryResponseDTO updateEmotion(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body,
+            @AuthenticationPrincipal User user) {
+        String emotion = body.get("emotion");
+        return diaryService.updateEmotion(id, emotion, user.getId());
+    }
+
     @Operation(summary = "일기 삭제", description = "기존 일기를 삭제합니다. 본인의 일기만 삭제 가능합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "삭제 성공"),

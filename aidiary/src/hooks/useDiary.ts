@@ -149,12 +149,17 @@ export const useDiary = (): UseDiaryReturn => {
         const { emotion, response: aiResponse } =
           response.data as AIAnalysisResponse;
 
+        const resolvedEmotion = emotion || "calm";
+
+        // DB에 분석된 감정 저장
+        await diaryApi.updateEmotion(entryId, resolvedEmotion);
+
         setEntries((prev) =>
           prev.map((entry) =>
             entry.id === entryId
               ? {
                   ...entry,
-                  emotion: emotion || "calm",
+                  emotion: resolvedEmotion,
                   aiResponse: aiResponse || "응원할게요!",
                 }
               : entry,

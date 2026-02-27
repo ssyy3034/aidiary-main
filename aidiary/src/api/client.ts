@@ -80,6 +80,8 @@ export const diaryApi = {
     id: number,
     data: { title: string; content: string; emotion: string },
   ) => apiClient.put(`/api/diary/${id}`, data),
+  updateEmotion: (id: number, emotion: string) =>
+    apiClient.patch(`/api/diary/${id}/emotion`, { emotion }),
   delete: (id: number) => apiClient.delete(`/api/diary/${id}`),
 };
 
@@ -164,6 +166,13 @@ export const personalityApi = {
     parent1_history: { role: string; content: string }[];
     parent2_history: { role: string; content: string }[];
   }) => apiClient.post("/api/personality/synthesize", data),
+};
+
+export const benefitsApi = {
+  getBenefits: (week?: number) =>
+    apiClient.get(`/api/benefits${week ? `?week=${week}` : ""}`),
+  toggleCheck: (benefitId: number) =>
+    apiClient.post(`/api/benefits/${benefitId}/check`),
 };
 
 export default apiClient;

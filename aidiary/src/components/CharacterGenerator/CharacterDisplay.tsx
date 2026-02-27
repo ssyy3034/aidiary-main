@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { THEME_COLORS } from '../common/FormInput';
 
 interface CharacterDisplayProps {
@@ -74,11 +75,44 @@ const CharacterDisplay: React.FC<CharacterDisplayProps> = ({
                     className="absolute -inset-3 rounded-[40px] -z-10"
                     style={{ background: 'rgba(255, 240, 230, 0.3)' }}
                 />
-                <img
+
+                {/* 떠오르는 캐릭터 */}
+                <motion.img
                     src={imageUrl}
                     alt="우리 아이 캐릭터"
-                    className="w-full max-w-[300px] mx-auto rounded-3xl shadow-lg transition-transform duration-300 cursor-pointer hover:scale-[1.02]"
+                    className="w-full max-w-[300px] mx-auto rounded-3xl cursor-pointer"
                     style={{ boxShadow: '0 8px 30px rgba(194, 103, 90, 0.2)' }}
+                    animate={{
+                        y: [0, -10, 0],
+                        scale: [1, 1.015, 1],
+                    }}
+                    transition={{
+                        duration: 3.5,
+                        ease: 'easeInOut',
+                        repeat: Infinity,
+                        repeatType: 'loop',
+                    }}
+                />
+
+                {/* 바닥 그림자 — 캐릭터가 뜰수록 작아짐 */}
+                <motion.div
+                    className="mx-auto rounded-full"
+                    style={{
+                        width: '180px',
+                        height: '10px',
+                        background: 'rgba(194, 103, 90, 0.12)',
+                        filter: 'blur(6px)',
+                    }}
+                    animate={{
+                        scaleX: [1, 0.8, 1],
+                        opacity: [0.6, 0.25, 0.6],
+                    }}
+                    transition={{
+                        duration: 3.5,
+                        ease: 'easeInOut',
+                        repeat: Infinity,
+                        repeatType: 'loop',
+                    }}
                 />
             </div>
         </div>

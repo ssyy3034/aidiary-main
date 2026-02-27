@@ -1,3 +1,6 @@
+import base64
+import numpy as np
+import cv2
 from flask import Blueprint, request, jsonify, send_file
 from services.image_generator import ImageGenerator
 from utils.file_utils import save_file

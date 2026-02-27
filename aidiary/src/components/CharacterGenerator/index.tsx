@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import ChildInfoForm from "./ChildInfoForm";
 import ParentImageUpload from "./ParentImageUpload";
 import CharacterDisplay from "./CharacterDisplay";
 import CharacterChat from "./CharacterChat";
 import useCharacter from "../../hooks/useCharacter";
 import { usePersonality } from "../PersonalityContext";
+import { useAuthStore } from "../../stores";
 import type { CharacterData } from "../../types";
 import "./CharacterGenerator.css";
 
@@ -15,9 +17,18 @@ interface CharacterGeneratorProps {
 const CharacterGenerator: React.FC<CharacterGeneratorProps> = ({
   onCharacterCreated,
 }) => {
+  const navigate = useNavigate();
   const { personality } = usePersonality();
+  const { hasCharacter } = useAuthStore();
   const [parent1File, setParent1File] = useState<File | null>(null);
   const [parent2File, setParent2File] = useState<File | null>(null);
+
+  // 캐릭터가 없고 성격 분석도 안 했으면 인터뷰 먼저
+  useEffect(() => {
+    if (!hasCharacter && !personality) {
+      navigate("/character-personality", { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
     generatedImage, isLoading, status, messages,

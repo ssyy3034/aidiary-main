@@ -60,6 +60,19 @@ public class DiaryService {
     }
 
     @Transactional
+    public DiaryResponseDTO updateEmotion(Long id, String emotion, Long userId) {
+        Diary diary = diaryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Diary", id));
+
+        if (!diary.getUser().getId().equals(userId)) {
+            throw new SecurityException("본인의 일기만 수정할 수 있습니다.");
+        }
+
+        diary.setEmotion(emotion);
+        return DiaryResponseDTO.fromEntity(diary);
+    }
+
+    @Transactional
     public void deleteDiary(Long id, Long userId) {
         Diary diary = diaryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Diary", id));

@@ -4,11 +4,13 @@ import WeeklyContent from "./WeeklyContent";
 import FetalMovementTracker from "./FetalMovementTracker";
 import HealthMetrics from "./HealthMetrics";
 import ContractionTimer from "./ContractionTimer";
+import BenefitsChecklist from "./BenefitsChecklist"; // IMPORTED
 
-type Tab = "weekly" | "fetal" | "metrics" | "contraction";
+type Tab = "weekly" | "fetal" | "metrics" | "contraction" | "benefits";
 
 const TABS: { id: Tab; label: string; emoji: string }[] = [
   { id: "weekly", label: "주차 정보", emoji: "🌱" },
+  { id: "benefits", label: "지원 혜택", emoji: "🎁" }, // ADDED TAB
   { id: "fetal", label: "태동 기록", emoji: "💗" },
   { id: "metrics", label: "건강 지표", emoji: "📊" },
   { id: "contraction", label: "수축 타이머", emoji: "⏱" },
@@ -71,9 +73,29 @@ const Health: React.FC = () => {
             key="weekly"
             animate={{ opacity: activeTab === "weekly" ? 1 : 0 }}
             transition={{ duration: 0.2 }}
-            className={activeTab === "weekly" ? "block" : "hidden"}
+            className={
+              activeTab === "weekly"
+                ? "block relative z-20"
+                : "hidden relative -z-10"
+            }
           >
             <WeeklyContent />
+          </motion.div>
+        )}
+        {mounted.has("benefits") && (
+          <motion.div
+            key="benefits"
+            animate={{ opacity: activeTab === "benefits" ? 1 : 0 }}
+            transition={{ duration: 0.2 }}
+            className={
+              activeTab === "benefits"
+                ? "block relative z-20"
+                : "hidden relative -z-10"
+            }
+          >
+            <div className="px-5 py-4">
+              <BenefitsChecklist />
+            </div>
           </motion.div>
         )}
         {mounted.has("fetal") && (
@@ -81,7 +103,11 @@ const Health: React.FC = () => {
             key="fetal"
             animate={{ opacity: activeTab === "fetal" ? 1 : 0 }}
             transition={{ duration: 0.2 }}
-            className={activeTab === "fetal" ? "block" : "hidden"}
+            className={
+              activeTab === "fetal"
+                ? "block relative z-20"
+                : "hidden relative -z-10"
+            }
           >
             <FetalMovementTracker />
           </motion.div>
@@ -91,7 +117,11 @@ const Health: React.FC = () => {
             key="metrics"
             animate={{ opacity: activeTab === "metrics" ? 1 : 0 }}
             transition={{ duration: 0.2 }}
-            className={activeTab === "metrics" ? "block" : "hidden"}
+            className={
+              activeTab === "metrics"
+                ? "block relative z-20"
+                : "hidden relative -z-10"
+            }
           >
             <HealthMetrics />
           </motion.div>
@@ -101,7 +131,11 @@ const Health: React.FC = () => {
             key="contraction"
             animate={{ opacity: activeTab === "contraction" ? 1 : 0 }}
             transition={{ duration: 0.2 }}
-            className={activeTab === "contraction" ? "block" : "hidden"}
+            className={
+              activeTab === "contraction"
+                ? "block relative z-20"
+                : "hidden relative -z-10"
+            }
           >
             <ContractionTimer />
           </motion.div>

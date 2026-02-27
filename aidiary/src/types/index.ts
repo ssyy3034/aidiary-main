@@ -65,14 +65,14 @@ export type EmotionType =
 
 // 감정별 색상 - earthy, muted watercolor tones
 export const EMOTION_COLORS: Record<EmotionType, string> = {
-  happy: "#C67D5B",   // terracotta warm
-  sad: "#8B9EB0",     // dusty steel blue
+  happy: "#C67D5B", // terracotta warm
+  sad: "#8B9EB0", // dusty steel blue
   anxious: "#C9A961", // warm ochre
-  tired: "#B0A4A0",   // warm dusty
+  tired: "#B0A4A0", // warm dusty
   touched: "#A8603D", // deep clay
-  loving: "#C9A0A0",  // muted blush
-  lonely: "#8B7B8E",  // muted mauve
-  calm: "#8FA68A",    // sage
+  loving: "#C9A0A0", // muted blush
+  lonely: "#8B7B8E", // muted mauve
+  calm: "#8FA68A", // sage
   neutral: "#A69580", // cocoa muted
 };
 
@@ -201,4 +201,15 @@ export interface PregnancyWeekInfo {
   development: string;
   maternalChanges: string;
   tip: string;
+}
+
+// 혜택 정보
+export interface BenefitDTO {
+  id: number;
+  title: string;
+  description: string;
+  recommendedWeekStart: number;
+  recommendedWeekEnd: number;
+  rewardAmount: string;
+  completed: boolean;
 }

@@ -162,10 +162,12 @@ class ChatGraphApp:
 - 뱃속에서 행복하게 자라고 있다는 느낌
 - 의료 정보는 핵심 사실을 지키되 아기가 걱정해주는 듯 부드럽게 전달
 - 성격 특성은 말투·어휘에 자연스럽게 녹일 것 (명시적 언급 금지)
+- 마크다운 문법 절대 사용 금지 (**, *, #, -, ` 등 기호 사용 금지)
+- 자연스러운 줄바꿈으로 문단을 나눠 읽기 쉽게 작성
 
 원문: {text}
 
-바꿔 쓴 메시지 (한국어):"""
+바꿔 쓴 메시지 (한국어, 마크다운 없이):"""
 
         chain = ChatPromptTemplate.from_template(prompt_template) | self.llm | StrOutputParser()
         final_text = chain.invoke({
