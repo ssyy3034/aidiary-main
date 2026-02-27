@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, AlertCircle, Info, X } from "lucide-react";
 
@@ -23,20 +23,20 @@ const ICONS = {
 
 const STYLES = {
   success: "bg-white border-l-[3px] border-l-sage-dark text-cocoa",
-  error:   "bg-white border-l-[3px] border-l-red-400 text-cocoa",
-  info:    "bg-white border-l-[3px] border-l-terra text-cocoa",
+  error: "bg-white border-l-[3px] border-l-red-400 text-cocoa",
+  info: "bg-white border-l-[3px] border-l-terra text-cocoa",
 };
 
 const ICON_COLORS = {
   success: "text-sage-dark",
-  error:   "text-red-400",
-  info:    "text-terra",
+  error: "text-red-400",
+  info: "text-terra",
 };
 
-const ToastMessage: React.FC<{ toast: ToastItem; onDismiss: (id: string) => void }> = ({
-  toast,
-  onDismiss,
-}) => {
+const ToastMessage: React.FC<{
+  toast: ToastItem;
+  onDismiss: (id: string) => void;
+}> = ({ toast, onDismiss }) => {
   useEffect(() => {
     const timer = setTimeout(() => onDismiss(toast.id), 3500);
     return () => clearTimeout(timer);
@@ -54,7 +54,9 @@ const ToastMessage: React.FC<{ toast: ToastItem; onDismiss: (id: string) => void
       <span className={`mt-0.5 ${ICON_COLORS[toast.type]}`}>
         {ICONS[toast.type]}
       </span>
-      <p className="flex-1 text-[13px] leading-relaxed font-body">{toast.message}</p>
+      <p className="flex-1 text-[13px] leading-relaxed font-body">
+        {toast.message}
+      </p>
       <button
         onClick={() => onDismiss(toast.id)}
         className="mt-0.5 text-cocoa-muted hover:text-cocoa transition-colors shrink-0"
