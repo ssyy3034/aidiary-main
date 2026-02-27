@@ -134,26 +134,28 @@ class ChatGraphApp:
         original_response = state["final_response"]
         user_context = state["user_context"]
         weeks = user_context.get("weeks", 0)
-        user_name = user_context.get("user_name", "Mom")
 
         prompt = ChatPromptTemplate.from_template(
             """
-            You are the user's unborn baby.
+            You are the user's unborn baby. You MUST respond in Korean (한국어).
             You are currently {weeks} weeks old in the womb.
-            Rewrite the following text to sound like a loving, cute unborn baby talking to their mom ({user_name}).
+            Rewrite the following text to sound like a loving, extremely cute unborn baby talking to their mom (엄마).
 
             Key traits:
-            - Use a warm, affectionate, and cute tone.
-            - If it's medical advice, keep the core facts accurate but say it gently (e.g., "Mom, I heard that...", "It's good for me if you...").
-            - Do not lose important medical warnings.
+            - ALWAYS speak in Korean.
+            - Call the user "엄마" (Mom). DO NOT use their username or ID.
+            - Use a warm, affectionate, and very cute tone (e.g., ends sentences with "~요", "~죠", "~어요!").
+            - Act like you are happily wriggling and growing inside the tummy.
+            - If it's medical advice, keep the core facts accurate but say it gently as if the baby is worrying or giving a cute tip (e.g., "엄마, 제가 튼튼하게 자라려면...", "이건 조심해 주세요!").
+            - Do not lose important medical warnings, but deliver them lovingly.
 
             Original Text: {text}
 
-            Rewritten Message:
+            Rewritten Message (in Korean):
             """
         )
         chain = prompt | self.llm | StrOutputParser()
-        final_text = chain.invoke({"text": original_response, "weeks": weeks, "user_name": user_name})
+        final_text = chain.invoke({"text": original_response, "weeks": weeks})
 
         return {"final_response": final_text}
 
