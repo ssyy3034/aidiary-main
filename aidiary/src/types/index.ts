@@ -151,3 +151,54 @@ export interface AIAnalysisResponse {
   emotion: EmotionType;
   response: string;
 }
+
+// 태동 기록
+export interface FetalMovement {
+  id: number;
+  movementTime: string;
+  intensity: 1 | 2 | 3;
+  notes?: string;
+  createdAt?: string;
+}
+
+// 오늘 태동 요약
+export interface FetalMovementSummary {
+  todayCount: number;
+  todayMaxIntensity: number;
+  todayMovements: FetalMovement[];
+}
+
+// 태동 기록 요청
+export interface FetalMovementRequest {
+  movementTime: string;
+  intensity: 1 | 2 | 3;
+  notes?: string;
+}
+
+// 건강 지표
+export interface HealthMetric {
+  id: number;
+  recordDate: string;
+  weight?: number;
+  systolic?: number;
+  diastolic?: number;
+}
+
+// 건강 지표 요청
+export interface HealthMetricRequest {
+  recordDate?: string;
+  weight?: number;
+  systolic?: number;
+  diastolic?: number;
+}
+
+// 임신 주차 정보
+export interface PregnancyWeekInfo {
+  week: number;
+  babySize: string;
+  babySizeCm: string;
+  babyWeightG: string;
+  development: string;
+  maternalChanges: string;
+  tip: string;
+}

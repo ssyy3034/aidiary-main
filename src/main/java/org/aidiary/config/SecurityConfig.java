@@ -43,7 +43,7 @@ public class SecurityConfig {
                         .permitAll()
                         // SPA 클라이언트 라우트 (React Router가 처리)
                         .requestMatchers("/login", "/register", "/diary", "/profile", "/character",
-                                "/character-personality")
+                                "/character-personality", "/health")
                         .permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**")
@@ -58,7 +58,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/child/**").authenticated()
                         .requestMatchers("/api/chat/**").authenticated()
                         .requestMatchers("/api/images/webhook").permitAll() // Added webhook endpoint
-                        .requestMatchers("/api/images/**").authenticated() // Changed from permitAll() to authenticated()
+                        .requestMatchers("/api/images/**").authenticated()
+                        .requestMatchers("/api/fetal-movement/**").authenticated()
+                        .requestMatchers("/api/health/**").authenticated()
+                        .requestMatchers("/api/pregnancy/**").authenticated()
                         // 나머지는 인증 필요
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

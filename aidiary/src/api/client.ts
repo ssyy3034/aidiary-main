@@ -125,4 +125,31 @@ export const imageApi = {
     }),
 };
 
+export const fetalApi = {
+  log: (data: { movementTime: string; intensity: number; notes?: string }) =>
+    apiClient.post("/api/fetal-movement", data),
+  getToday: () => apiClient.get("/api/fetal-movement/today"),
+  getHistory: (date?: string, page = 0, size = 20) =>
+    apiClient.get(
+      `/api/fetal-movement/history?page=${page}&size=${size}${date ? `&date=${date}` : ""}`,
+    ),
+  delete: (id: number) => apiClient.delete(`/api/fetal-movement/${id}`),
+};
+
+export const healthApi = {
+  save: (data: {
+    recordDate?: string;
+    weight?: number;
+    systolic?: number;
+    diastolic?: number;
+  }) => apiClient.post("/api/health", data),
+  getHistory: () => apiClient.get("/api/health/history"),
+  getLatest: () => apiClient.get("/api/health/latest"),
+};
+
+export const pregnancyApi = {
+  getCurrentWeek: () => apiClient.get("/api/pregnancy/current"),
+  getWeek: (week: number) => apiClient.get(`/api/pregnancy/${week}`),
+};
+
 export default apiClient;

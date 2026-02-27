@@ -1,10 +1,11 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, BookOpen, Baby, User } from "lucide-react";
+import { Home, BookOpen, Baby, User, HeartPulse } from "lucide-react";
 
 const tabs = [
   { label: "홈", icon: Home, path: "/" },
   { label: "일기", icon: BookOpen, path: "/diary" },
+  { label: "건강", icon: HeartPulse, path: "/health" },
   { label: "우리아이", icon: Baby, path: "/character" },
   { label: "마이", icon: User, path: "/profile" },
 ];

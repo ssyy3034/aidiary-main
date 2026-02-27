@@ -45,6 +45,7 @@ services:
       - "5001:5001"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
       - ./faceapi:/app
       - hf_cache:/root/.cache/huggingface

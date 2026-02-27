@@ -18,6 +18,7 @@ import CharacterGenerator from "./components/CharacterGenerator";
 import CharacterPersonalityBuilder from "./components/CharacterPersonalityBuilder";
 import BottomTabBar from "./components/BottomTabBar";
 import HomePage from "./components/HomePage";
+import Health from "./components/Health";
 import { PersonalityProvider } from "./components/PersonalityContext";
 import ToastContainer from "./components/common/Toast";
 import { useToast } from "./hooks/useToast";
@@ -309,6 +310,18 @@ const AppContent: React.FC = () => {
                     <CharacterPersonalityBuilder
                       onPersonalityGenerated={handlePersonalityGenerated}
                     />
+                  </PageWrap>
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
+            />
+            <Route
+              path="/health"
+              element={
+                isAuthenticated ? (
+                  <PageWrap>
+                    <Health />
                   </PageWrap>
                 ) : (
                   <Navigate to="/login" />
