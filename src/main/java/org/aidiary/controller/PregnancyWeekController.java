@@ -18,7 +18,9 @@ public class PregnancyWeekController {
     @GetMapping("/current")
     public ResponseEntity<PregnancyWeekDTO> getCurrentWeek(
             @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(pregnancyWeekService.getCurrentWeekData(user.getId()));
+        return pregnancyWeekService.getCurrentWeekData(user.getId())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 
     @GetMapping("/{week}")

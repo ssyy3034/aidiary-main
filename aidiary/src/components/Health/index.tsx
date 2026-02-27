@@ -3,13 +3,15 @@ import { motion } from "framer-motion";
 import WeeklyContent from "./WeeklyContent";
 import FetalMovementTracker from "./FetalMovementTracker";
 import HealthMetrics from "./HealthMetrics";
+import ContractionTimer from "./ContractionTimer";
 
-type Tab = "weekly" | "fetal" | "metrics";
+type Tab = "weekly" | "fetal" | "metrics" | "contraction";
 
 const TABS: { id: Tab; label: string; emoji: string }[] = [
   { id: "weekly", label: "주차 정보", emoji: "🌱" },
   { id: "fetal", label: "태동 기록", emoji: "💗" },
   { id: "metrics", label: "건강 지표", emoji: "📊" },
+  { id: "contraction", label: "수축 타이머", emoji: "⏱" },
 ];
 
 const Health: React.FC = () => {
@@ -35,12 +37,12 @@ const Health: React.FC = () => {
 
       {/* 서브탭 */}
       <div className="sticky top-12 z-30 bg-linen/95 backdrop-blur-sm px-5 py-3 border-b border-linen-deep">
-        <div className="relative flex bg-linen-dark/60 rounded-2xl p-1 gap-0.5">
+        <div className="relative flex bg-linen-dark/60 rounded-2xl p-1 gap-0.5 overflow-x-auto scrollbar-none">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`relative flex-1 py-2.5 rounded-xl text-xs font-semibold transition-colors z-10 ${
+              className={`relative shrink-0 flex-1 min-w-[72px] py-2.5 rounded-xl text-[11px] font-semibold transition-colors z-10 ${
                 activeTab === tab.id
                   ? "text-white"
                   : "text-cocoa-muted hover:text-cocoa"
@@ -53,9 +55,9 @@ const Health: React.FC = () => {
                   transition={{ type: "spring", stiffness: 400, damping: 35 }}
                 />
               )}
-              <span className="relative z-10 flex items-center justify-center gap-1">
-                <span>{tab.emoji}</span>
-                <span>{tab.label}</span>
+              <span className="relative z-10 flex flex-col items-center justify-center gap-0.5 leading-none">
+                <span className="text-base leading-none">{tab.emoji}</span>
+                <span className="whitespace-nowrap">{tab.label}</span>
               </span>
             </button>
           ))}
@@ -92,6 +94,16 @@ const Health: React.FC = () => {
             className={activeTab === "metrics" ? "block" : "hidden"}
           >
             <HealthMetrics />
+          </motion.div>
+        )}
+        {mounted.has("contraction") && (
+          <motion.div
+            key="contraction"
+            animate={{ opacity: activeTab === "contraction" ? 1 : 0 }}
+            transition={{ duration: 0.2 }}
+            className={activeTab === "contraction" ? "block" : "hidden"}
+          >
+            <ContractionTimer />
           </motion.div>
         )}
       </div>

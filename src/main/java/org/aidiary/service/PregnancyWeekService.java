@@ -242,24 +242,19 @@ public class PregnancyWeekService {
         return WEEK_DATA.get(week);
     }
 
-    public PregnancyWeekDTO getCurrentWeekData(Long userId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+    public java.util.Optional<PregnancyWeekDTO> getCurrentWeekData(Long userId) {
+        java.util.Optional<Child> childOpt = childRepository.findById(userId);
+        if (childOpt.isEmpty()) return java.util.Optional.empty();
 
-        Child child = childRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Child", userId));
-
-        String childBirthday = child.getChildBirthday();
-        if (childBirthday == null || childBirthday.isBlank()) {
-            return getWeekData(1);
-        }
+        String childBirthday = childOpt.get().getChildBirthday();
+        if (childBirthday == null || childBirthday.isBlank()) return java.util.Optional.empty();
 
         LocalDate dueDate = LocalDate.parse(childBirthday);
         LocalDate today = LocalDate.now();
-        LocalDate lmp = dueDate.minusDays(280); // 마지막 생리일 추정
+        LocalDate lmp = dueDate.minusDays(280);
         long daysSinceLmp = ChronoUnit.DAYS.between(lmp, today);
         int week = (int) (daysSinceLmp / 7) + 1;
         week = Math.max(1, Math.min(42, week));
-        return getWeekData(week);
+        return java.util.Optional.of(getWeekData(week));
     }
 }

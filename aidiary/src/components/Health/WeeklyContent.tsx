@@ -229,10 +229,10 @@ const WeeklyContent: React.FC = () => {
       <AnimatePresence mode="wait">
         <motion.div
           key={currentWeek}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+          exit={{ opacity: 0, y: -8, transition: { duration: 0.2 } }}
           className="space-y-3"
         >
           {/* 아기 크기 */}
@@ -263,7 +263,7 @@ const WeeklyContent: React.FC = () => {
           {/* 태아 발달 */}
           <motion.div
             variants={fadeUp}
-            className="bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-paper border border-white/50 overflow-hidden"
+            className="bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-paper border border-white/50 overflow-hidden relative"
           >
             <div className="absolute left-0 top-0 bottom-0 w-1 bg-terra rounded-l-2xl" />
             <div className="flex items-start gap-3">

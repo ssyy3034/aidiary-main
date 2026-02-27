@@ -239,16 +239,23 @@ const FetalMovementTracker: React.FC = () => {
     loadSummary();
   }, [loadSummary]);
 
+  const getLocalIsoString = () => {
+    const now = new Date();
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 19);
+  };
+
   const handleQuickLog = async () => {
     setQuickLogging(true);
     try {
       await fetalApi.log({
-        movementTime: new Date().toISOString().slice(0, 19),
+        movementTime: getLocalIsoString(),
         intensity: 2,
       });
-      await loadSummary();
     } catch {
     } finally {
+      await loadSummary();
       setQuickLogging(false);
     }
   };
@@ -257,15 +264,15 @@ const FetalMovementTracker: React.FC = () => {
     setSubmitting(true);
     try {
       await fetalApi.log({
-        movementTime: new Date().toISOString().slice(0, 19),
+        movementTime: getLocalIsoString(),
         intensity,
         notes: notes.trim() || undefined,
       });
       setNotes("");
       setShowForm(false);
-      await loadSummary();
     } catch {
     } finally {
+      await loadSummary();
       setSubmitting(false);
     }
   };
