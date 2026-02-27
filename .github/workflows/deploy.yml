@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       deploy_all:
-        description: 'Deploy all services'
+        description: "Deploy all services"
         type: boolean
         default: true
 
@@ -140,14 +140,23 @@ jobs:
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: GEMINI_API_KEY
           script: |
             aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 376129842460.dkr.ecr.ap-northeast-2.amazonaws.com
             cd ~/aidiary-main
             git pull origin main
+
+            # Update GEMINI_API_KEY in .env.prod
+            touch .env.prod
+            sed -i '/^GEMINI_API_KEY=/d' .env.prod || true
+            echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env.prod
+
             docker-compose --env-file .env.prod -f docker-compose.prod.yml pull face-api
             docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d face-api
             docker image prune -f
