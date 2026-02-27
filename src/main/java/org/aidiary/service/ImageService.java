@@ -9,8 +9,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -29,6 +31,7 @@ public class ImageService {
 
     private final ImageJobStore imageJobStore;
     private final RabbitTemplate rabbitTemplate;
+    private final org.springframework.amqp.rabbit.core.RabbitAdmin rabbitAdmin;
     private final RestTemplateHolder restTemplateHolder = new RestTemplateHolder();
 
     /**
@@ -37,6 +40,17 @@ public class ImageService {
      */
     public void processViaQueue(String jobId, byte[] parent1Bytes, String parent1Name,
             byte[] parent2Bytes, String parent2Name) {
+
+        // 1. Queue Depth 확인 (Graceful Degradation)
+        java.util.Properties queueProperties = rabbitAdmin.getQueueProperties(RabbitMQConfig.IMAGE_QUEUE);
+        if (queueProperties != null) {
+            Object msgCountObj = queueProperties.get(org.springframework.amqp.rabbit.core.RabbitAdmin.QUEUE_MESSAGE_COUNT);
+            if (msgCountObj instanceof Integer && (Integer) msgCountObj >= 100) {
+                log.warn("🚨 RabbitMQ 대기열 포화 상태 ({}건). 요청 거절 (Graceful Degradation)", msgCountObj);
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "현재 이용자가 많아 사진 합성이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.");
+            }
+        }
+
         ImageJobMessage message = new ImageJobMessage(
                 jobId, parent1Bytes, parent1Name, parent2Bytes, parent2Name);
         rabbitTemplate.convertAndSend(

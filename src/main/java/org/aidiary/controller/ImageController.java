@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Map;
+import org.aidiary.util.ContentHashUtil;
 
 @RestController
 @RequestMapping("/api/images")
@@ -36,7 +37,18 @@ public class ImageController {
         byte[] parent1Bytes = parent1.getBytes();
         byte[] parent2Bytes = parent2.getBytes();
 
-        String jobId = imageJobStore.createJob();
+        // 1. 캐싱 파악: 동일한 이미지 스펙인지 해시 생성
+        String contentHash = ContentHashUtil.calculateHash(parent1Bytes, parent2Bytes);
+
+        // 2. 캐시 히트 시 즉시 응답 반환 (큐에 중복 적재 방지)
+        String existingJobId = imageJobStore.getCachedJobId(contentHash);
+        if (existingJobId != null) {
+            log.info("🎯 Cache Hit! 동일 이미지 해시 요청, 기존 작업 ID 반환: {}", existingJobId);
+            return ResponseEntity.accepted().body(Map.of("jobId", existingJobId));
+        }
+
+        // 3. 신규 요청: Job 생성 후 큐 적재
+        String jobId = imageJobStore.createJobWithHash(contentHash);
         imageService.processViaQueue(jobId,
                 parent1Bytes, parent1.getOriginalFilename(),
                 parent2Bytes, parent2.getOriginalFilename());
@@ -73,8 +85,8 @@ public class ImageController {
         JobResult job = jobOpt.get();
         return switch (job.status()) {
             case DONE -> {
-                // 클라이언트 수신 즉시 메모리 해제 — TTL 10분 대기 불필요
-                imageJobStore.remove(jobId);
+                // 캐싱을 위해 클라이언트 수신 즉시 삭제하지 않음.
+                // 메모리 관리는 ImageJobStore의 TTL cleanup에 위임.
                 yield ResponseEntity.ok()
                         .contentType(MediaType.IMAGE_PNG)
                         .body(job.imageBytes());
