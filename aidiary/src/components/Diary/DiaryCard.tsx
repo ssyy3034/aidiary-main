@@ -5,8 +5,15 @@ import type { DiaryEntry, EmotionType } from "../../types";
 import { EMOTION_COLORS, EMOTION_LABELS } from "../../types";
 
 const EMOTION_EMOJIS: Record<EmotionType, string> = {
-  happy: "🌸", sad: "🌧️", anxious: "🍂", tired: "🌙",
-  touched: "✨", loving: "💕", lonely: "🪻", calm: "🍃", neutral: "☁️",
+  happy: "🌸",
+  sad: "🌧️",
+  anxious: "🍂",
+  tired: "🌙",
+  touched: "✨",
+  loving: "💕",
+  lonely: "🪻",
+  calm: "🍃",
+  neutral: "☁️",
 };
 
 interface DiaryCardProps {
@@ -19,7 +26,12 @@ interface DiaryCardProps {
 }
 
 const DiaryCard: React.FC<DiaryCardProps> = ({
-  entry, isLoadingAI, onEdit, onDelete, onRequestAI, onGetDrawing,
+  entry,
+  isLoadingAI,
+  onEdit,
+  onDelete,
+  onRequestAI,
+  onGetDrawing,
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -34,9 +46,7 @@ const DiaryCard: React.FC<DiaryCardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="group relative bg-white rounded-lg overflow-hidden shadow-paper hover:shadow-paper-hover transition-shadow border border-linen-deep"
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      className="group relative bg-white/80 backdrop-blur-md rounded-2xl overflow-hidden shadow-paper hover:shadow-lifted hover:-translate-y-1 transition-all duration-300 border border-white/50"
       data-testid="diary-card"
     >
       {/* Image area */}
@@ -57,7 +67,11 @@ const DiaryCard: React.FC<DiaryCardProps> = ({
           <div className="absolute top-3 left-3">
             <span
               className="stamp text-white text-[10px]"
-              style={{ backgroundColor: emotionColor, borderColor: emotionColor, color: 'white' }}
+              style={{
+                backgroundColor: emotionColor,
+                borderColor: emotionColor,
+                color: "white",
+              }}
               data-testid="emotion-badge"
             >
               {emotionEmoji} {emotionLabel}
@@ -80,55 +94,97 @@ const DiaryCard: React.FC<DiaryCardProps> = ({
                 {emotionEmoji} {emotionLabel}
               </span>
             )}
-            <time className="text-[11px] text-cocoa-muted" data-testid="diary-date">
+            <time
+              className="text-[11px] text-cocoa-muted"
+              data-testid="diary-date"
+            >
               {dayjs(entry.createdAt).format("M월 D일")}
             </time>
           </div>
 
-          <AnimatePresence>
-            {showActions && (
-              <motion.div
-                initial={{ opacity: 0, x: 6 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 6 }}
-                className="flex gap-1"
-              >
-                <button
-                  onClick={onEdit}
-                  className="p-1.5 rounded text-cocoa-muted hover:text-terra hover:bg-terra/5 transition-colors"
-                  aria-label="수정" data-testid="edit-button"
+          <div className="flex items-center gap-1">
+            <AnimatePresence>
+              {showActions && (
+                <motion.div
+                  initial={{ opacity: 0, x: 6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 6 }}
+                  className="flex gap-1"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={onDelete}
-                  className="p-1.5 rounded text-cocoa-muted hover:text-red-400 hover:bg-red-50 transition-colors"
-                  aria-label="삭제" data-testid="delete-button"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <button
+                    onClick={onEdit}
+                    className="p-1.5 rounded text-cocoa-muted hover:text-terra hover:bg-terra/5 transition-colors"
+                    aria-label="수정"
+                    data-testid="edit-button"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={onDelete}
+                    className="p-1.5 rounded text-cocoa-muted hover:text-red-400 hover:bg-red-50 transition-colors"
+                    aria-label="삭제"
+                    data-testid="delete-button"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <button
+              onClick={() => setShowActions((v) => !v)}
+              className="p-1.5 rounded text-cocoa-muted hover:text-terra hover:bg-terra/5 transition-colors"
+              aria-label="메뉴"
+              aria-expanded={showActions}
+            >
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <circle cx="5" cy="12" r="1.5" />
+                <circle cx="12" cy="12" r="1.5" />
+                <circle cx="19" cy="12" r="1.5" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
-        <p className="text-cocoa text-[14px] leading-relaxed whitespace-pre-wrap mb-4" data-testid="diary-content">
+        <p
+          className="text-cocoa text-[14px] leading-relaxed whitespace-pre-wrap mb-4"
+          data-testid="diary-content"
+        >
           {entry.content}
         </p>
 
         {/* Actions */}
-        <div className="pt-3 border-t border-linen-deep space-y-3">
-          <div className="flex gap-2">
+        <div className="pt-4 border-t border-linen-deep/50 space-y-4">
+          <div className="flex gap-3">
             {!entry.fetalArtUrl && (
               <button
                 onClick={onGetDrawing}
                 disabled={isLoadingAI}
-                className="flex-1 py-2 text-[12px] font-bold tracking-wide rounded-md border border-terra/25 text-terra hover:bg-terra/5 transition-colors disabled:opacity-35"
+                className="flex-1 py-2.5 text-[13px] font-bold tracking-wide rounded-xl border-2 border-terra/30 text-terra hover:bg-terra hover:text-white transition-all duration-300 disabled:opacity-40"
               >
                 {isLoadingAI ? "생성 중..." : "그림일기 그리기"}
               </button>
@@ -136,7 +192,7 @@ const DiaryCard: React.FC<DiaryCardProps> = ({
             <button
               onClick={onRequestAI}
               disabled={isLoadingAI}
-              className={`flex-1 py-2 text-[12px] font-bold tracking-wide rounded-md border border-sage/30 text-sage-dark hover:bg-sage/5 transition-colors disabled:opacity-35 ${!entry.fetalArtUrl ? "" : "w-full"}`}
+              className={`flex-1 py-2.5 text-[13px] font-bold tracking-wide rounded-xl border-2 border-sage/40 text-sage-dark hover:bg-sage hover:text-white transition-all duration-300 disabled:opacity-40 ${!entry.fetalArtUrl ? "" : "w-full"}`}
             >
               {isLoadingAI ? "분석 중..." : "태아 반응 보기"}
             </button>
@@ -146,13 +202,19 @@ const DiaryCard: React.FC<DiaryCardProps> = ({
           <AnimatePresence>
             {entry.aiResponse && (
               <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative p-3 bg-[#FFF9E6] border border-[#F0E4B8] rounded-sm"
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.4, type: "spring" }}
+                className="relative p-4 bg-gradient-to-br from-[#FFF9E6]/90 to-[#FFF0C2]/90 backdrop-blur-sm shadow-inner rounded-2xl border border-[#F0E4B8]/60"
                 data-testid="ai-response"
               >
-                <p className="text-[13px] text-cocoa leading-relaxed">
-                  <span className="mr-1">👶</span>
+                <div
+                  className="absolute top-0 right-4 -mt-3 text-2xl animate-bounce"
+                  style={{ animationDuration: "2s" }}
+                >
+                  👶
+                </div>
+                <p className="text-[14px] text-cocoa leading-relaxed font-medium pr-6 mt-1">
                   {entry.aiResponse}
                 </p>
               </motion.div>

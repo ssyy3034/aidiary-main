@@ -54,6 +54,7 @@ export const authApi = {
   login: (data: { username: string; password: string }) =>
     apiClient.post("/api/auth/login", data),
   signup: (data: {
+    name: string;
     username: string;
     password: string;
     email: string;

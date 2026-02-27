@@ -19,6 +19,8 @@ import CharacterPersonalityBuilder from "./components/CharacterPersonalityBuilde
 import BottomTabBar from "./components/BottomTabBar";
 import HomePage from "./components/HomePage";
 import { PersonalityProvider } from "./components/PersonalityContext";
+import ToastContainer from "./components/common/Toast";
+import { useToast } from "./hooks/useToast";
 
 // Stores & API
 import { useAuthStore, useUIStore } from "./stores";
@@ -52,6 +54,7 @@ const AppContent: React.FC = () => {
     updateUserInfo,
   } = useAuthStore();
   const { setLoading, setError } = useUIStore();
+  const { toasts, dismiss, toast } = useToast();
 
   useEffect(() => {
     const validateToken = async () => {
@@ -120,6 +123,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleRegister = async (
+    name: string,
     username: string,
     password: string,
     email: string,
@@ -128,8 +132,8 @@ const AppContent: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      await authApi.signup({ username, password, email, phone });
-      alert("회원가입이 완료되었습니다.");
+      await authApi.signup({ name, username, password, email, phone });
+      toast.success("회원가입이 완료되었습니다.");
       await handleLogin(username, password);
     } catch (error: any) {
       const errorCode = error.response?.data?.errorCode;
@@ -147,7 +151,7 @@ const AppContent: React.FC = () => {
       }
 
       setError(message);
-      alert(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -176,9 +180,9 @@ const AppContent: React.FC = () => {
           : undefined,
       });
       updateUserInfo(profile);
-      alert("프로필이 업데이트되었습니다.");
+      toast.success("프로필이 업데이트되었습니다.");
     } catch {
-      alert("프로필 업데이트에 실패했습니다.");
+      toast.error("프로필 업데이트에 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -188,11 +192,11 @@ const AppContent: React.FC = () => {
     setLoading(true);
     try {
       await userApi.deleteAccount();
-      alert("계정이 삭제되었습니다.");
+      toast.success("계정이 삭제되었습니다.");
       logout();
       navigate("/login");
     } catch {
-      alert("계정 삭제에 실패했습니다.");
+      toast.error("계정 삭제에 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -203,10 +207,10 @@ const AppContent: React.FC = () => {
     try {
       const response = await childApi.save(character);
       setCharacter(response.data);
-      alert("캐릭터가 생성되었습니다!");
+      toast.success("캐릭터가 생성되었습니다!");
       navigate("/diary");
     } catch {
-      alert("캐릭터 생성에 실패했습니다.");
+      toast.error("캐릭터 생성에 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -216,6 +220,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-linen font-body text-cocoa">
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
       {/* Top bar */}
       {isAuthenticated && (
         <header className="fixed top-0 left-0 right-0 z-40 bg-linen/95 border-b border-linen-deep h-12">

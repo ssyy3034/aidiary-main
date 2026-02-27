@@ -15,12 +15,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
 @Tag(name = "Character Chat API", description = "캐릭터와의 대화 API")
 public class ChatController {
+
+    private static final int PREGNANCY_DAYS = 280;
+    private static final int MAX_PREGNANCY_WEEKS = 42;
 
     private final ChatService chatService;
     private final ChildService childService;
@@ -32,47 +38,27 @@ public class ChatController {
             @RequestBody ChatRequest request,
             @AuthenticationPrincipal User user) {
 
-        // 사용자의 캐릭터 성격 정보 및 생일 조회
-        // Child entity stores birthday as String. Assuming format YYYY-MM-DD
-        // We need to calculate gestational age (weeks).
-        // Pregnancy usually lasts 40 weeks.
-        // If childBirthday is expected due date:
-        // Current Date - (Due Date - 280 days) = Days Pregnant
-        // Weeks = Days / 7
-
         ChildDTO child = childService.getChildByUserId(user.getId()).orElse(null);
 
         String personality = null;
         int weeks = 0;
-        String userName = user.getName();
 
         if (child != null) {
             personality = child.getGptResponse();
             String birthdayStr = child.getChildBirthday();
 
-            if (birthdayStr != null && !birthdayStr.isEmpty()) {
+            if (birthdayStr != null && !birthdayStr.isBlank()) {
                 try {
-                    // Assuming birthdayStr is "YYYY-MM-DD"
-                    java.time.LocalDate dueDate = java.time.LocalDate.parse(birthdayStr);
-                    java.time.LocalDate conceptionDate = dueDate.minusDays(280);
-                    java.time.LocalDate today = java.time.LocalDate.now();
-
-                    long daysPregnant = java.time.temporal.ChronoUnit.DAYS.between(conceptionDate, today);
-                    weeks = (int) (daysPregnant / 7);
-
-                    if (weeks < 0)
-                        weeks = 0;
-                    if (weeks > 42)
-                        weeks = 42; // Cap at max
-
+                    LocalDate dueDate = LocalDate.parse(birthdayStr);
+                    LocalDate conceptionDate = dueDate.minusDays(PREGNANCY_DAYS);
+                    long daysPregnant = ChronoUnit.DAYS.between(conceptionDate, LocalDate.now());
+                    weeks = (int) Math.min(Math.max(daysPregnant / 7, 0), MAX_PREGNANCY_WEEKS);
                 } catch (Exception e) {
-                    // Log error or ignore, default to 0
-                    System.err.println("Failed to parse child birthday: " + e.getMessage());
+                    log.warn("출산 예정일 파싱 실패 (childBirthday={}): {}", birthdayStr, e.getMessage());
                 }
             }
         }
 
-        // Fetch most recent diary entry
         String recentDiary = "";
         try {
             var diaryPage = diaryService.getDiariesByUser(user.getId(), 0, 1);
@@ -80,11 +66,11 @@ public class ChatController {
                 recentDiary = diaryPage.getContent().get(0).getContent();
             }
         } catch (Exception e) {
-            log.error("Failed to fetch recent diary: {}", e.getMessage());
+            log.error("최근 일기 조회 실패: {}", e.getMessage());
         }
 
-        ChatResponse response = chatService.generateCharacterResponse(request, personality, weeks, userName,
-                recentDiary);
+        ChatResponse response = chatService.generateCharacterResponse(
+                request, personality, weeks, user.getName(), recentDiary);
         return ResponseEntity.ok(response);
     }
 }

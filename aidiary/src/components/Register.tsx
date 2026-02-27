@@ -6,7 +6,7 @@ import FormInput from './common/FormInput';
 import useFormValidation, { FormData, initialFormData } from '../hooks/useFormValidation';
 
 interface RegisterProps {
-    onRegister: (username: string, password: string, email: string, phone: string) => Promise<void> | void;
+    onRegister: (name: string, username: string, password: string, email: string, phone: string) => Promise<void> | void;
 }
 
 const Register: React.FC<RegisterProps> = ({ onRegister }) => {
@@ -24,7 +24,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
         if (!isValid) return;
         setIsLoading(true);
         try {
-            await onRegister(form.username, form.password, form.email, form.phone);
+            await onRegister(form.name, form.username, form.password, form.email, form.phone);
         } finally {
             setIsLoading(false);
         }
@@ -57,6 +57,12 @@ const Register: React.FC<RegisterProps> = ({ onRegister }) => {
                     </div>
 
                     <form className="space-y-4" onSubmit={handleSubmit}>
+                        <FormInput
+                            id="name" label="이름" type="text"
+                            placeholder="홍길동"
+                            value={form.name} onChange={updateField('name')}
+                            error={errors.name} disabled={isLoading}
+                        />
                         <FormInput
                             id="username" label="아이디" type="text"
                             placeholder="영문자와 숫자만 (3자 이상)"

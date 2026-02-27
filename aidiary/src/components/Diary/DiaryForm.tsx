@@ -55,7 +55,7 @@ const DiaryForm: React.FC<DiaryFormProps> = ({ dailyPrompt, isLoading, onSubmit 
             오늘의 질문
           </p>
           <p className="text-ink text-[14px] leading-relaxed">{dailyPrompt}</p>
-          <p className="text-[11px] text-cocoa-muted mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <p className="text-[11px] text-cocoa-muted mt-2 opacity-60">
             탭하여 일기에 추가 &rarr;
           </p>
         </motion.div>

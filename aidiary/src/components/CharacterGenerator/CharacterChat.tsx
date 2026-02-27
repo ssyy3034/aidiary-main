@@ -43,10 +43,10 @@ const CharacterChat: React.FC<CharacterChatProps> = ({
     <div className="mt-4">
       {/* 메시지 목록 */}
       <div
-        className="max-h-[300px] overflow-y-auto mb-3 p-4 rounded-3xl min-h-[150px] flex flex-col gap-3"
+        className="max-h-[350px] overflow-y-auto mb-4 p-5 rounded-3xl min-h-[200px] flex flex-col gap-4 backdrop-blur-md border border-white/20"
         style={{
-          backgroundColor: "rgba(255, 255, 255, 0.5)",
-          boxShadow: "inset 0 2px 10px rgba(0,0,0,0.05)",
+          backgroundColor: "rgba(255, 255, 255, 0.6)",
+          boxShadow: "0 8px 32px rgba(60, 46, 36, 0.05)",
         }}
       >
         {messages.length === 0 ? (
@@ -57,10 +57,10 @@ const CharacterChat: React.FC<CharacterChatProps> = ({
           messages.map((msg, index) => (
             <div
               key={index}
-              className={`max-w-[70%] px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+              className={`max-w-[75%] px-5 py-3.5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg text-[14px] leading-relaxed ${
                 msg.sender === "user"
-                  ? "self-end rounded-[20px_20px_0_20px]"
-                  : "self-start rounded-[20px_20px_20px_0]"
+                  ? "self-end rounded-[24px_24px_4px_24px]"
+                  : "self-start rounded-[24px_24px_24px_4px]"
               }`}
               style={{
                 backgroundColor: msg.sender === "user" ? subColor : mainColor,
@@ -82,20 +82,42 @@ const CharacterChat: React.FC<CharacterChatProps> = ({
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
           disabled={isSending}
-          placeholder="아이에게 말을 걸어보세요..."
-          className="flex-1 px-4 py-3 rounded-2xl bg-white/80 transition-all duration-300 focus:outline-none focus:ring-2 hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50"
+          placeholder="아이에게 다정한 말을 건네보세요..."
+          className="flex-1 px-5 py-4 rounded-full bg-white/70 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:ring-4 hover:shadow-md disabled:opacity-50 text-[14px] text-cocoa"
           style={{
             borderColor: subColor,
             borderWidth: "1px",
+            boxShadow: `0 0 0 0 ${subColor}33`,
           }}
+          onFocus={(e) =>
+            (e.target.style.boxShadow = `0 0 0 4px ${subColor}33`)
+          }
+          onBlur={(e) => (e.target.style.boxShadow = `0 0 0 0 ${subColor}33`)}
         />
         <button
           onClick={handleSend}
           disabled={isSending || !input.trim()}
-          className="px-4 py-3 rounded-2xl text-white font-medium transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50"
+          className="px-6 py-4 rounded-full text-white font-bold tracking-wide transition-all duration-300 hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 flex items-center justify-center min-w-[80px]"
           style={{ backgroundColor: subColor }}
         >
-          {isSending ? "..." : "전송"}
+          {isSending ? (
+            <div className="flex gap-1.5 items-center justify-center">
+              <div
+                className="w-1.5 h-1.5 rounded-full bg-white opacity-60 animate-bounce"
+                style={{ animationDelay: "0ms" }}
+              ></div>
+              <div
+                className="w-1.5 h-1.5 rounded-full bg-white opacity-80 animate-bounce"
+                style={{ animationDelay: "150ms" }}
+              ></div>
+              <div
+                className="w-1.5 h-1.5 rounded-full bg-white animate-bounce"
+                style={{ animationDelay: "300ms" }}
+              ></div>
+            </div>
+          ) : (
+            "전송"
+          )}
         </button>
       </div>
     </div>

@@ -15,6 +15,7 @@ langgraph
 langchain
 langchain-community
 langchain-openai
+langchain-google-genai
 chromadb
 sentence-transformers
 beautifulsoup4

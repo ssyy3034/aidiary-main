@@ -22,23 +22,25 @@ public class ImageJobStore {
 
     private static final long TTL_MINUTES = 10;
 
-    // jobId -> 결과 저장소
+    // jobId → 결과
     private final ConcurrentHashMap<String, JobResult> store = new ConcurrentHashMap<>();
-    // contentHash -> jobId 매핑 캐시
+    // contentHash → jobId (중복 요청 캐싱용)
     private final ConcurrentHashMap<String, String> hashToJobId = new ConcurrentHashMap<>();
+    // jobId → contentHash (cleanup 시 O(1) 역방향 조회용)
+    private final ConcurrentHashMap<String, String> jobIdToHash = new ConcurrentHashMap<>();
 
     /**
-     * 캐시 확인: 기존에 진행 중이거나 완료된 해시면 저장된 jobId를 반환합니다.
+     * 캐시 확인: 동일 이미지 해시의 기존 jobId를 반환합니다.
      */
     public synchronized String getCachedJobId(String contentHash) {
-        if (hashToJobId.containsKey(contentHash)) {
-            String existingJobId = hashToJobId.get(contentHash);
-            // 원본 데이터가 TTL로 인해 지워지진 않았는지 확인
+        String existingJobId = hashToJobId.get(contentHash);
+        if (existingJobId != null) {
             if (store.containsKey(existingJobId)) {
                 return existingJobId;
-            } else {
-                hashToJobId.remove(contentHash); // 만료된 캐시 키 정리
             }
+            // TTL로 store에서 제거된 경우 캐시도 정리
+            hashToJobId.remove(contentHash);
+            jobIdToHash.remove(existingJobId);
         }
         return null;
     }
@@ -50,6 +52,7 @@ public class ImageJobStore {
         String jobId = UUID.randomUUID().toString();
         store.put(jobId, new JobResult(Status.PENDING, null, null, Instant.now()));
         hashToJobId.put(contentHash, jobId);
+        jobIdToHash.put(jobId, contentHash);
         return jobId;
     }
 
@@ -75,25 +78,24 @@ public class ImageJobStore {
         return Optional.ofNullable(store.get(jobId));
     }
 
-    // 클라이언트가 결과를 수신해도 해시 캐싱 유지를 위해 즉시 제거하지 않음.
-    // TTL_MINUTES 기반 cleanup()에 메모리 관리를 온전히 위임.
-
     /**
      * 메모리 누수 방지: TTL_MINUTES를 초과한 Job을 정리한다.
-     * ConcurrentHashMap에 strong reference로 유지되는 byte[]는
-     * GC 대상이 되지 않으므로, 명시적으로 제거해야 한다.
+     * jobIdToHash 역방향 맵으로 O(1)에 hashToJobId 항목 제거.
      */
     @Scheduled(fixedRate = 60_000)
     public void cleanup() {
         Instant cutoff = Instant.now().minusSeconds(TTL_MINUTES * 60);
         int beforeSize = store.size();
 
-        // 오래된 잡 찾아서 제거
         store.entrySet().removeIf(entry -> {
             boolean expired = entry.getValue().createdAt().isBefore(cutoff);
             if (expired) {
-                // hashToJobId 맵에서도 해당 jobId를 가진 엔트리 제거
-                hashToJobId.values().remove(entry.getKey());
+                String jobId = entry.getKey();
+                // O(1) 역방향 조회로 hashToJobId 정리
+                String contentHash = jobIdToHash.remove(jobId);
+                if (contentHash != null) {
+                    hashToJobId.remove(contentHash);
+                }
             }
             return expired;
         });

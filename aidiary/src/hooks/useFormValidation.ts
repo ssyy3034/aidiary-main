@@ -7,6 +7,12 @@ import { z } from 'zod';
  * - 검증 규칙과 에러 메시지가 한 곳에 정의됨
  */
 export const registerSchema = z.object({
+    name: z
+        .string()
+        .min(1, '이름을 입력해주세요.')
+        .min(2, '이름은 2자 이상이어야 합니다.')
+        .max(30, '이름은 30자 이하여야 합니다.'),
+
     username: z
         .string()
         .min(1, '아이디를 입력해주세요.')
@@ -45,6 +51,7 @@ export type FormErrors = Partial<Record<keyof FormData, string>>;
 
 // 초기값
 export const initialFormData: FormData = {
+    name: '',
     username: '',
     password: '',
     confirmPassword: '',

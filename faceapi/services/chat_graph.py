@@ -1,7 +1,7 @@
 from typing import TypedDict, Annotated, List, Union
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from config import Config
@@ -19,7 +19,7 @@ class AgentState(TypedDict):
 # --- Graph Class ---
 class ChatGraphApp:
     def __init__(self):
-        self.llm = ChatOpenAI(model="gpt-4", api_key=Config.OPENAI_API_KEY, temperature=0.7)
+        self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=Config.GEMINI_API_KEY, temperature=0.7)
         self.knowledge_base = KnowledgeBase()
         # self.knowledge_base.ingest_medical_data() # Disabled: Use ingest.py for trusted data
 
