@@ -13,12 +13,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
@@ -35,19 +33,15 @@ public class ImageService {
     private final org.springframework.amqp.rabbit.core.RabbitAdmin rabbitAdmin;
     private final RestTemplate restTemplate;
 
-    /**
-     * RabbitMQ를 통한 비동기 이미지 분석 요청.
-     * Tomcat 스레드를 점유하지 않고, 메시지 큐에 작업을 위임한다.
-     */
     public void processViaQueue(String jobId, byte[] parent1Bytes, String parent1Name,
             byte[] parent2Bytes, String parent2Name) {
 
-        // 1. Queue Depth 확인 (Graceful Degradation)
+        // 큐 포화 시 429 반환
         java.util.Properties queueProperties = rabbitAdmin.getQueueProperties(RabbitMQConfig.IMAGE_QUEUE);
         if (queueProperties != null) {
             Object msgCountObj = queueProperties.get(org.springframework.amqp.rabbit.core.RabbitAdmin.QUEUE_MESSAGE_COUNT);
             if (msgCountObj instanceof Integer && (Integer) msgCountObj >= 100) {
-                log.warn("🚨 RabbitMQ 대기열 포화 상태 ({}건). 요청 거절 (Graceful Degradation)", msgCountObj);
+                log.warn("큐 포화 ({}건), 요청 거절", msgCountObj);
                 throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "현재 이용자가 많아 사진 합성이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.");
             }
         }
@@ -58,26 +52,7 @@ public class ImageService {
                 RabbitMQConfig.IMAGE_EXCHANGE,
                 RabbitMQConfig.IMAGE_ROUTING_KEY,
                 message);
-        log.info("📤 Image job {} 큐에 발행", jobId);
-    }
-
-    /**
-     * @deprecated @Async 기반 직접 처리 — processViaQueue() 사용 권장.
-     *             RabbitMQ 장애 시 fallback으로 사용 가능.
-     */
-    @Deprecated
-    @Async("imageTaskExecutor")
-    public void processAsync(String jobId, byte[] parent1Bytes, String parent1Name,
-            byte[] parent2Bytes, String parent2Name) {
-        imageJobStore.markProcessing(jobId);
-        try {
-            byte[] result = callFlask(parent1Bytes, parent1Name, parent2Bytes, parent2Name);
-            imageJobStore.complete(jobId, result);
-            log.info("Image job {} completed", jobId);
-        } catch (Exception e) {
-            imageJobStore.fail(jobId, e.getMessage());
-            log.error("Image job {} failed: {}", jobId, e.getMessage());
-        }
+        log.info("Image job {} queued", jobId);
     }
 
     private byte[] callFlask(byte[] parent1Bytes, String parent1Name,
@@ -99,13 +74,6 @@ public class ImageService {
         } else {
             throw new IOException("Flask API error: " + response.getStatusCode());
         }
-    }
-
-    /** @deprecated 동기 호출 방식 — processViaQueue() 사용 권장 */
-    @Deprecated
-    public byte[] sendImages(MultipartFile parent1, MultipartFile parent2) throws IOException {
-        return callFlask(parent1.getBytes(), parent1.getOriginalFilename(),
-                parent2.getBytes(), parent2.getOriginalFilename());
     }
 
     static class FileSystemResource extends ByteArrayResource {

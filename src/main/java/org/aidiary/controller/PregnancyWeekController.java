@@ -5,6 +5,8 @@ import org.aidiary.dto.response.PregnancyWeekDTO;
 import org.aidiary.entity.User;
 import org.aidiary.service.PregnancyWeekCacheService;
 import org.aidiary.service.PregnancyWeekService;
+import org.aidiary.service.UserContextService;
+import org.aidiary.service.UserContextService.UserContext;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -16,18 +18,22 @@ public class PregnancyWeekController {
 
     private final PregnancyWeekService pregnancyWeekService;
     private final PregnancyWeekCacheService pregnancyWeekCacheService;
+    private final UserContextService userContextService;
 
     @GetMapping("/current")
     public ResponseEntity<PregnancyWeekDTO> getCurrentWeek(
             @AuthenticationPrincipal User user) {
         return pregnancyWeekService.getCurrentWeekData(user.getId())
-                .map(baseDto -> pregnancyWeekCacheService.getWeekContent(baseDto.getWeek()))
+                .map(baseDto -> {
+                    UserContext ctx = userContextService.buildContext(user.getId(), baseDto.getWeek());
+                    return pregnancyWeekCacheService.getPersonalizedWeekContent(ctx);
+                })
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
     }
 
     @GetMapping("/{week}")
     public ResponseEntity<PregnancyWeekDTO> getWeek(@PathVariable int week) {
-        return ResponseEntity.ok(pregnancyWeekCacheService.getWeekContent(week));
+        return ResponseEntity.ok(pregnancyWeekCacheService.getCommonWeekContent(week));
     }
 }

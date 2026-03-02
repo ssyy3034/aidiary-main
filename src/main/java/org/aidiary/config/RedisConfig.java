@@ -14,17 +14,11 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Configuration
 public class RedisConfig {
 
-    /**
-     * Redis 직렬화 설정.
-     * - key: String (UTF-8)
-     * - value: JSON (타입 정보 포함 — 역직렬화 시 클래스 복원 가능)
-     */
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        // 역직렬화 시 타입 복원을 위해 타입 정보를 JSON에 포함
         mapper.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance,
                 ObjectMapper.DefaultTyping.NON_FINAL

@@ -10,10 +10,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface DiaryRepository extends JpaRepository<Diary, Long> {
+
+    /**
+     * 최근 N일간 감정 라벨 조회 — 개인화 프롬프트 컨텍스트용.
+     */
+    @Query("SELECT d.emotion FROM Diary d WHERE d.user.id = :userId AND d.createdAt >= :since ORDER BY d.createdAt DESC")
+    List<String> findRecentEmotionsByUserId(@Param("userId") Long userId, @Param("since") LocalDateTime since);
 
     /**
      * 일기 목록 조회 — DTO Projection.

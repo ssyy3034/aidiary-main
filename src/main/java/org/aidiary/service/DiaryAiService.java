@@ -27,41 +27,22 @@ public class DiaryAiService {
     private final RestTemplate restTemplate;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    /**
-     * 오늘의 일기 질문을 반환한다.
-     *
-     * <p>외부 AI API(OpenAI/Gemini)는 요청당 ~300–800 ms 지연과 API 비용이 발생한다.
-     * "오늘의 질문"은 하루 동안 모든 사용자에게 동일해야 하므로
-     * 날짜를 키로 Redis에 캐싱하고 자정에 자동 만료되도록 설정한다.
-     *
-     * <ul>
-     *   <li>Cache key : {@code daily_question:YYYY-MM-DD}</li>
-     *   <li>TTL       : 현재 시각 → 다음 날 자정 (오늘이 끝나면 자동 무효화)</li>
-     *   <li>HIT       : Redis 반환 (~1 ms)</li>
-     *   <li>MISS      : Flask → AI API 호출 후 Redis 저장</li>
-     * </ul>
-     */
+    /** 오늘의 질문을 Redis 캐시에서 반환. 자정에 자동 만료. */
     @SuppressWarnings("unchecked")
     public Map<String, String> getDailyQuestion() {
         String cacheKey = DAILY_QUESTION_KEY_PREFIX + LocalDate.now();
 
-        // 1. 캐시 조회 — HIT 시 AI API 호출 없이 즉시 반환
         Object cached = redisTemplate.opsForValue().get(cacheKey);
         if (cached instanceof Map) {
-            log.debug("[Cache HIT] daily_question:{}", LocalDate.now());
             return (Map<String, String>) cached;
         }
 
-        // 2. Cache MISS → Flask(AI API) 호출
-        log.info("[Cache MISS] daily_question:{} — calling Flask AI API", LocalDate.now());
         String url = flaskApiUrl + "/api/daily-question";
         Map<String, String> response = restTemplate.getForObject(url, Map.class);
 
-        // 3. 자정까지 남은 시간을 TTL로 설정 → 날짜가 바뀌면 자동으로 새 질문 생성
         LocalDateTime midnight = LocalDate.now().plusDays(1).atStartOfDay();
         long ttlSeconds = Duration.between(LocalDateTime.now(), midnight).getSeconds();
         redisTemplate.opsForValue().set(cacheKey, response, Duration.ofSeconds(ttlSeconds));
-        log.info("[Cache SET] daily_question:{}, ttl={}s (until midnight)", LocalDate.now(), ttlSeconds);
 
         return response;
     }

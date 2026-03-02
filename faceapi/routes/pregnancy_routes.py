@@ -54,13 +54,13 @@ WEEK_SIZES = {
 }
 
 
-def _build_prompt(week: int) -> str:
+def _build_prompt(week: int, context: dict = None) -> str:
     trimester = (
         "임신 1기 (초기)"  if week <= 12 else
         "임신 2기 (중기)"  if week <= 27 else
         "임신 3기 (후기)"
     )
-    return f"""임신 {week}주차({trimester}) 산모를 위한 정보를 아래 JSON 형식으로만 응답하세요.
+    base_prompt = f"""임신 {week}주차({trimester}) 산모를 위한 정보를 아래 JSON 형식으로만 응답하세요.
 마크다운 코드 블록 없이 순수 JSON만 출력하세요.
 
 {{
@@ -74,11 +74,24 @@ def _build_prompt(week: int) -> str:
   "checkup": "이번 주 권장 검사·병원 방문 사항 (해당 없으면 null)"
 }}"""
 
+    if context:
+        emotion_summary = context.get('emotionSummary', '정보 없음')
+        weight = context.get('weight', '정보 없음')
+        blood_pressure = context.get('bloodPressure', '정보 없음')
 
-@pregnancy_bp.route('/api/pregnancy/week-content', methods=['GET'])
-def get_week_content():
-    week = request.args.get('week', type=int)
+        base_prompt += f"""
 
+이 산모의 최근 상태를 반영해 맞춤형으로 답변하세요:
+- 최근 7일 감정 경향: {emotion_summary}
+- 체중: {weight}kg
+- 혈압: {blood_pressure}
+맞춤 조언은 emotionalSupport, tip, recommendedFoods에 반영하세요."""
+
+    return base_prompt
+
+
+def _handle_week_content(week, context=None):
+    """공통 처리 로직: week 검증 → Gemini 호출 → 응답 조립"""
     if not week or week < 1 or week > 42:
         return jsonify({"error": "유효하지 않은 임신 주차입니다. 1~42 사이 값을 입력하세요."}), 400
 
@@ -88,7 +101,7 @@ def get_week_content():
             google_api_key=Config.GEMINI_API_KEY,
             temperature=0.3,
         )
-        response = llm.invoke([HumanMessage(content=_build_prompt(week))])
+        response = llm.invoke([HumanMessage(content=_build_prompt(week, context))])
         text = response.content.strip()
         text = re.sub(r'```json\n?|\n?```', '', text).strip()
         ai_data = json.loads(text)
@@ -107,3 +120,25 @@ def get_week_content():
         **ai_data,
     }
     return jsonify(result)
+
+
+@pregnancy_bp.route('/api/pregnancy/week-content', methods=['GET'])
+def get_week_content():
+    """기존 GET 엔드포인트 — 공통 주차 콘텐츠 (컨텍스트 없음)"""
+    week = request.args.get('week', type=int)
+    return _handle_week_content(week)
+
+
+@pregnancy_bp.route('/api/pregnancy/week-content', methods=['POST'])
+def get_personalized_week_content():
+    """POST 엔드포인트 — 사용자 컨텍스트 기반 개인화 콘텐츠"""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "요청 본문이 필요합니다."}), 400
+
+    week = data.get('week')
+    if not isinstance(week, int):
+        return jsonify({"error": "week 필드가 필요합니다."}), 400
+
+    context = data.get('context')
+    return _handle_week_content(week, context)

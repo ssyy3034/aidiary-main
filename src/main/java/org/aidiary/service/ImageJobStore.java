@@ -22,16 +22,10 @@ public class ImageJobStore {
 
     private static final long TTL_MINUTES = 10;
 
-    // jobId → 결과
     private final ConcurrentHashMap<String, JobResult> store = new ConcurrentHashMap<>();
-    // contentHash → jobId (중복 요청 캐싱용)
     private final ConcurrentHashMap<String, String> hashToJobId = new ConcurrentHashMap<>();
-    // jobId → contentHash (cleanup 시 O(1) 역방향 조회용)
     private final ConcurrentHashMap<String, String> jobIdToHash = new ConcurrentHashMap<>();
 
-    /**
-     * 캐시 확인: 동일 이미지 해시의 기존 jobId를 반환합니다.
-     */
     public synchronized String getCachedJobId(String contentHash) {
         String existingJobId = hashToJobId.get(contentHash);
         if (existingJobId != null) {
@@ -45,9 +39,6 @@ public class ImageJobStore {
         return null;
     }
 
-    /**
-     * 신규 작업 생성 및 캐시 매핑 등록.
-     */
     public synchronized String createJobWithHash(String contentHash) {
         String jobId = UUID.randomUUID().toString();
         store.put(jobId, new JobResult(Status.PENDING, null, null, Instant.now()));
@@ -82,10 +73,6 @@ public class ImageJobStore {
         return Optional.ofNullable(store.get(jobId));
     }
 
-    /**
-     * 메모리 누수 방지: TTL_MINUTES를 초과한 Job을 정리한다.
-     * jobIdToHash 역방향 맵으로 O(1)에 hashToJobId 항목 제거.
-     */
     @Scheduled(fixedRate = 60_000)
     public void cleanup() {
         Instant cutoff = Instant.now().minusSeconds(TTL_MINUTES * 60);
@@ -95,7 +82,6 @@ public class ImageJobStore {
             boolean expired = entry.getValue().createdAt().isBefore(cutoff);
             if (expired) {
                 String jobId = entry.getKey();
-                // O(1) 역방향 조회로 hashToJobId 정리
                 String contentHash = jobIdToHash.remove(jobId);
                 if (contentHash != null) {
                     hashToJobId.remove(contentHash);
@@ -110,7 +96,6 @@ public class ImageJobStore {
         }
     }
 
-    /** 현재 저장된 Job 수 (모니터링용) */
     public int getJobCount() {
         return store.size();
     }

@@ -55,7 +55,7 @@ def process_message(ch, method, properties, body):
         message_data = json.loads(body.decode('utf-8'))
         job_id = message_data.get('jobId')
 
-        logger.info(f"📥 Received Job: {job_id}")
+        logger.info(f"Received Job: {job_id}")
 
         # 멱등성 가드: RabbitMQ at-least-once delivery로 인한 중복 처리 방지 (~30초 연산 낭비 차단)
         if check_already_processed(job_id):
@@ -85,7 +85,7 @@ def process_message(ch, method, properties, body):
 
         # 3. Webhook으로 백엔드(Spring Boot)에 결과 리턴
         if result.get("success"):
-            logger.info(f"✅ Job {job_id} ML Processing Success. Sending to Webhook...")
+            logger.info(f"Job {job_id} ML done, sending webhook")
             image_path = result.get("image_path")
 
             with open(image_path, 'rb') as img_file:
@@ -94,27 +94,24 @@ def process_message(ch, method, properties, body):
                 resp = requests.post(WEBHOOK_URL, data=data, files=files)
 
             if resp.status_code == 200:
-                logger.info(f"🎉 Webhook transmission success for {job_id}")
+                logger.info(f"Webhook sent for {job_id}")
             else:
-                logger.error(f"❌ Webhook returned {resp.status_code}: {resp.text}")
+                logger.error(f"Webhook failed {resp.status_code}: {resp.text}")
         else:
-            logger.error(f"⚠️ ML Pipeline Failed for {job_id}: {result.get('error')}")
+            logger.error(f"ML failed for {job_id}: {result.get('error')}")
             send_failure_webhook(job_id, result.get("error"))
 
     except Exception as e:
-        logger.error(f"❌ Critical Worker Error on Job {job_id}: {str(e)}")
+        logger.error(f"Worker error on {job_id}: {str(e)}")
         send_failure_webhook(job_id, str(e))
     finally:
         # 메시지 처리 완료 ACK 전송
-        logger.info(f"✅ Sending ACK for {job_id}")
+        logger.info(f"ACK {job_id}")
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        # 파일 정리
-        try:
-            if 'p1_path' in locals() and os.path.exists(p1_path): os.remove(p1_path)
-            if 'p2_path' in locals() and os.path.exists(p2_path): os.remove(p2_path)
-        except Exception:
-            pass
+        for path in [locals().get('p1_path'), locals().get('p2_path')]:
+            if path and os.path.exists(path):
+                os.remove(path)
 
 def send_failure_webhook(job_id, error_msg):
     try:
@@ -124,7 +121,7 @@ def send_failure_webhook(job_id, error_msg):
         logger.error(f"Failed to send failure webhook for {job_id}: {e}")
 
 def main():
-    logger.info("🚀 Starting Face API RabbitMQ Worker...")
+    logger.info("Starting image worker...")
 
     # RabbitMQ가 완전히 뜰 때까지 대기
     connection = None
@@ -147,7 +144,7 @@ def main():
             time.sleep(5)
 
     if not connection:
-        logger.error("❌ Failed to connect to RabbitMQ. Exiting.")
+        logger.error("Failed to connect to RabbitMQ")
         return
 
     channel = connection.channel()
@@ -164,7 +161,7 @@ def main():
     # 콜백 등록 (auto_ack=False 로 설정해 수동 성공 처리)
     channel.basic_consume(queue=QUEUE_NAME, on_message_callback=process_message, auto_ack=False)
 
-    logger.info(f"🎧 Ready to consume messages from '{QUEUE_NAME}'. Waiting for tasks...")
+    logger.info(f"Consuming from '{QUEUE_NAME}'")
     try:
         channel.start_consuming()
     except KeyboardInterrupt:
