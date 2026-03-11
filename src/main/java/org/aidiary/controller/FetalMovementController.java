@@ -15,13 +15,25 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/fetal-movement")
 @RequiredArgsConstructor
+@Tag(name = "Fetal Movement API", description = "태동 측정 및 기록 관리 API")
 public class FetalMovementController {
 
     private final FetalMovementService fetalMovementService;
 
+    @Operation(summary = "태동 기록", description = "새로운 태동 강도와 메모를 기록합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "기록 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "401", description = "인증 필요")
+    })
     @PostMapping
     public ResponseEntity<FetalMovementDTO> log(
             @Valid @RequestBody FetalMovementRequest request,
@@ -29,12 +41,22 @@ public class FetalMovementController {
         return ResponseEntity.ok(fetalMovementService.log(user.getId(), request));
     }
 
+    @Operation(summary = "오늘의 태동 요약", description = "오늘 하루 동안 기록된 태동 횟수와 마지막 태동 시간을 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 필요")
+    })
     @GetMapping("/today")
     public ResponseEntity<FetalMovementSummaryDTO> getTodaySummary(
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(fetalMovementService.getTodaySummary(user.getId()));
     }
 
+    @Operation(summary = "태동 기록 히스토리 조회", description = "특정 날짜의 태동 기록 목록을 페이지네이션하여 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 필요")
+    })
     @GetMapping("/history")
     public ResponseEntity<Page<FetalMovementDTO>> getHistory(
             @AuthenticationPrincipal User user,
