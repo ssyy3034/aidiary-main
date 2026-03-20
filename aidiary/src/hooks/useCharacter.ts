@@ -150,11 +150,11 @@ export const useCharacter = (
         // 2단계: 작업 상태 폴링
         setStatus("캐릭터 생성 중...");
         let done = false;
-        const MAX_POLLS = 40; // 3초 × 40 = 최대 2분
+        const MAX_POLLS = 120; // 1초 × 120 = 최대 2분
         let pollCount = 0;
         while (!done && pollCount < MAX_POLLS) {
           pollCount++;
-          await new Promise((r) => setTimeout(r, 3000)); // 3초 대기
+          await new Promise((r) => setTimeout(r, 1000)); // 1초 대기
           const statusRes = await imageApi.getStatus(jobId);
           const jobStatus = statusRes.data?.status;
 

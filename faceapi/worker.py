@@ -26,15 +26,13 @@ WEBHOOK_URL = os.environ.get('SPRING_WEBHOOK_URL', 'http://host.docker.internal:
 SPRING_BASE_URL = WEBHOOK_URL.rsplit('/api/images/webhook', 1)[0]
 QUEUE_NAME = 'image-processing'
 
-# Lazy load ImageGenerator to save memory on boot if needed
-image_generator = None
+# Eager load: 시작 시 ML 모델을 미리 로딩하여 첫 요청 콜드 스타트 제거
+logger.info("Initializing Heavy ML Models (ImageGenerator)...")
+from services.image_generator import ImageGenerator
+image_generator = ImageGenerator()
+logger.info("ML Models ready.")
 
 def get_image_generator():
-    global image_generator
-    if image_generator is None:
-        logger.info("Initializing Heavy ML Models (ImageGenerator)...")
-        from services.image_generator import ImageGenerator
-        image_generator = ImageGenerator()
     return image_generator
 
 def check_already_processed(job_id):

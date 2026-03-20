@@ -68,7 +68,9 @@ class ImageGenerator:
 
             # 참조 이미지가 있으면 image-to-image
             if reference_image is not None:
-                _, buf = cv2.imencode('.png', reference_image)
+                # JPEG 압축으로 전송 크기 축소 → Gemini API 응답 시간 단축
+                ref_resized = cv2.resize(reference_image, (384, 384))
+                _, buf = cv2.imencode('.jpg', ref_resized, [cv2.IMWRITE_JPEG_QUALITY, 85])
                 img_bytes = buf.tobytes()
 
                 ref_text = (
@@ -78,7 +80,7 @@ class ImageGenerator:
                     f"Specific details: {enhanced_prompt}"
                 )
                 contents = [
-                    types.Part.from_bytes(data=img_bytes, mime_type="image/png"),
+                    types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
                     types.Part.from_text(text=ref_text),
                 ]
             else:
