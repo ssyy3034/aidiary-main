@@ -81,42 +81,38 @@
 
 ### 🖼 시스템 아키텍처 다이어그램
 
-```text
-                                     🌐 사용자 (User)
-                                            │
-                                            ▼
-                           ┌──────────────────────────────────┐
-                           │      도메인 (AWS Route 53)        │
-                           │  - 가비아 DNS 등록 / 주소 라우팅     │
-                           │  (API -> EC2 / Static -> S3/CF)  │
-                           └───────────────┬──────────────────┘
-                 ┌─────────────────────────┴────────────────────────┐
-                 ▼                                                  ▼
-      [ S3 + CloudFront ]                        ┌──────────────────────────────────┐
-       (Frontend PWA)                            │    🚀 AWS EC2 (t3.small 서버)    │
-                                                 │ ──────────────────────────────── │
-                                                 │  ┌────────────────────────────┐  │
-                                                 │  │ 🐳 Docker Compose Ecosystem │  │
-                                                 │  │                            │  │
-                                                 │  │ ┌────────────┐   ┌───────┐ │  │
-                                                 │  │ │ Spring Boot│◀─▶│ Redis │ │  │
-                                                 │  │ │ (Main App) │   └───────┘ │  │
-                                                 │  │ └─────┬──────┘             │  │
-                                                 │  │       │          ┌────────┐│  │
-                                                 │  │       └─────────▶│RabbitMQ││  │
-                                                 │  │                  └────┬───┘│  │
-                                                 │  │       ┌───────────────┘    │  │
-                                                 │  │       ▼                    │  │
-                                                 │  │ ┌────────────┐   ┌────────┐│  │
-                                                 │  │ │Flask Worker│◀─▶│AI Models││  │
-                                                 │  │ └─────┬──────┘   └────────┘│  │
-                                                 │  └───────┼────────────────────┘  │
-                                                 └──────────┼───────────────────────┘
-                                                            │           ▲
-                     ┌────────────┐                         │           │      ┌────────────┐
-                     │    (RDS)   │                         ▼           └──────┤ 외부 LLM API │
-                     │   MariaDB  │◀────────────────────────┘                  │ (OpenAI 등) │
-                     └────────────┘                                            └────────────┘
+```mermaid
+architecture-beta
+    group aws(cloud)[AWS Cloud]
+    group ec2(server)[EC2 - t3.small] in aws
+    group docker(system)[Docker Compose] in ec2
+    
+    service cf(internet)[CloudFront\n(SSL/TLS 1.2)] in aws
+    service s3(server)[Amazon S3\n(SPA React)] in aws
+    service rds(database)[RDS\n(MariaDB 11.8)] in aws
+    
+    service spring(server)[Spring Boot\n(Main API Server)] in docker
+    service flask(server)[Flask AI Service\n(Worker: 5000/8000)] in docker
+    service rabbitmq(server)[RabbitMQ\n(Message Queue)] in docker
+    service redis(database)[Redis\n(Cache & Lock)] in docker
+    service monitoring(server)[Prometheus\n+ Grafana] in docker
+    
+    service ext_ai(internet)[External LLMs\n(OpenAI, Gemini)]
+    
+    cf:B --> T:s3
+    cf:B --> T:spring
+    cf:R --> L:flask
+    
+    spring:L --> R:rds
+    spring:R --> L:redis
+    spring:B --> T:rabbitmq
+    
+    rabbitmq:R --> L:flask
+    flask:R --> L:ext_ai
+    flask:T --> B:spring
+    
+    monitoring:T --> B:redis
+    monitoring:T --> B:spring
 ```
 
 ![System Architecture](./docs/architecture.png)
