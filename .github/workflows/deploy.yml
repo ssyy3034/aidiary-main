@@ -107,12 +107,18 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: ECR_REGISTRY
           script: |
-            aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 376129842460.dkr.ecr.ap-northeast-2.amazonaws.com
+            aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
             cd ~/aidiary-main
             git fetch --all
             git reset --hard origin/main
             git clean -fd
+
+            # Ensure ECR_REGISTRY is in .env.prod
+            touch .env.prod
+            sed -i '/^ECR_REGISTRY=/d' .env.prod || true
+            echo "ECR_REGISTRY=${ECR_REGISTRY}" >> .env.prod
             docker-compose --env-file .env.prod -f docker-compose.prod.yml pull aidiary-app
             docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d aidiary-app
             docker image prune -f
@@ -148,18 +154,20 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: GEMINI_API_KEY
+          envs: GEMINI_API_KEY,ECR_REGISTRY
           script: |
-            aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 376129842460.dkr.ecr.ap-northeast-2.amazonaws.com
+            aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
             cd ~/aidiary-main
             git fetch --all
             git reset --hard origin/main
             git clean -fd
 
-            # Update GEMINI_API_KEY in .env.prod
+            # Update envs in .env.prod
             touch .env.prod
             sed -i '/^GEMINI_API_KEY=/d' .env.prod || true
             echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env.prod
+            sed -i '/^ECR_REGISTRY=/d' .env.prod || true
+            echo "ECR_REGISTRY=${ECR_REGISTRY}" >> .env.prod
 
             docker-compose --env-file .env.prod -f docker-compose.prod.yml pull face-api
             docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d face-api
