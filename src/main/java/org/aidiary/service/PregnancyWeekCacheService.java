@@ -8,4 +8,6 @@ public interface PregnancyWeekCacheService {
     PregnancyWeekDTO getPersonalizedWeekContent(UserContext ctx);
 
     PregnancyWeekDTO getCommonWeekContent(int week);
+    
+    void warmup();
 }

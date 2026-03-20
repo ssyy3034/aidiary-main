@@ -15,7 +15,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 @Slf4j
 @Configuration
-@EnableAsync
+@EnableAsync(proxyTargetClass = true)
 @EnableScheduling
 public class AsyncConfig {
 

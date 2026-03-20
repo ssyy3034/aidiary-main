@@ -230,8 +230,7 @@ public class CachingPregnancyWeekService implements PregnancyWeekCacheService {
         throw new IllegalArgumentException("유효하지 않은 임신 주차: " + week);
     }
 
-    @EventListener(ApplicationReadyEvent.class)
-    @Async
+    @Override
     public void warmup() {
         log.info("임신 주차 공통 콘텐츠 사전 로딩 시작");
         int loaded = 0;
