@@ -110,7 +110,9 @@ jobs:
           script: |
             aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 376129842460.dkr.ecr.ap-northeast-2.amazonaws.com
             cd ~/aidiary-main
-            git pull origin main
+            git fetch --all
+            git reset --hard origin/main
+            git clean -fd
             docker-compose --env-file .env.prod -f docker-compose.prod.yml pull aidiary-app
             docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d aidiary-app
             docker image prune -f
@@ -150,7 +152,9 @@ jobs:
           script: |
             aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 376129842460.dkr.ecr.ap-northeast-2.amazonaws.com
             cd ~/aidiary-main
-            git pull origin main
+            git fetch --all
+            git reset --hard origin/main
+            git clean -fd
 
             # Update GEMINI_API_KEY in .env.prod
             touch .env.prod
