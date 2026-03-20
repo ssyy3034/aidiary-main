@@ -118,7 +118,7 @@ jobs:
             # Ensure ECR_REGISTRY is in .env.prod
             touch .env.prod
             sed -i '/^ECR_REGISTRY=/d' .env.prod || true
-            echo "ECR_REGISTRY=${ECR_REGISTRY}" >> .env.prod
+            echo "ECR_REGISTRY=${{ env.ECR_REGISTRY }}" >> .env.prod
             docker-compose --env-file .env.prod -f docker-compose.prod.yml pull aidiary-app
             docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d aidiary-app
             docker image prune -f
@@ -167,7 +167,7 @@ jobs:
             sed -i '/^GEMINI_API_KEY=/d' .env.prod || true
             echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env.prod
             sed -i '/^ECR_REGISTRY=/d' .env.prod || true
-            echo "ECR_REGISTRY=${ECR_REGISTRY}" >> .env.prod
+            echo "ECR_REGISTRY=${{ env.ECR_REGISTRY }}" >> .env.prod
 
             docker-compose --env-file .env.prod -f docker-compose.prod.yml pull face-api
             docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d face-api
