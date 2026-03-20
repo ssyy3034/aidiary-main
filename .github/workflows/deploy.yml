@@ -103,11 +103,17 @@ jobs:
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: ECR_REGISTRY
+          envs: ECR_REGISTRY,DB_URL,DB_USERNAME,DB_PASSWORD,JWT_SECRET,CORS_ALLOWED_ORIGINS
           script: |
             aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
             cd ~/aidiary-main
@@ -115,10 +121,21 @@ jobs:
             git reset --hard origin/main
             git clean -fd
 
-            # Ensure ECR_REGISTRY is in .env.prod
+            # Update envs in .env.prod
             touch .env.prod
             sed -i '/^ECR_REGISTRY=/d' .env.prod || true
             echo "ECR_REGISTRY=${{ env.ECR_REGISTRY }}" >> .env.prod
+            sed -i '/^DB_URL=/d' .env.prod || true
+            echo "DB_URL=${DB_URL}" >> .env.prod
+            sed -i '/^DB_USERNAME=/d' .env.prod || true
+            echo "DB_USERNAME=${DB_USERNAME}" >> .env.prod
+            sed -i '/^DB_PASSWORD=/d' .env.prod || true
+            echo "DB_PASSWORD=${DB_PASSWORD}" >> .env.prod
+            sed -i '/^JWT_SECRET=/d' .env.prod || true
+            echo "JWT_SECRET=${JWT_SECRET}" >> .env.prod
+            sed -i '/^CORS_ALLOWED_ORIGINS=/d' .env.prod || true
+            echo "CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}" >> .env.prod
+
             docker-compose --env-file .env.prod -f docker-compose.prod.yml pull aidiary-app
             docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d aidiary-app
             docker image prune -f
@@ -150,11 +167,12 @@ jobs:
         uses: appleboy/ssh-action@v1
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: GEMINI_API_KEY,ECR_REGISTRY
+          envs: GEMINI_API_KEY,OPENAI_API_KEY,ECR_REGISTRY
           script: |
             aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
             cd ~/aidiary-main
@@ -166,6 +184,8 @@ jobs:
             touch .env.prod
             sed -i '/^GEMINI_API_KEY=/d' .env.prod || true
             echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env.prod
+            sed -i '/^OPENAI_API_KEY=/d' .env.prod || true
+            echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> .env.prod
             sed -i '/^ECR_REGISTRY=/d' .env.prod || true
             echo "ECR_REGISTRY=${{ env.ECR_REGISTRY }}" >> .env.prod
 

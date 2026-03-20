@@ -1,6 +1,7 @@
 package org.aidiary.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.aidiary.dto.ChildDTO;
 import org.aidiary.dto.request.LoginRequest;
 import org.aidiary.dto.request.SignUpRequest;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
         private final UserRepository userRepository;
@@ -69,10 +71,14 @@ public class AuthService {
         public AuthResponse login(LoginRequest request) {
                 // 1. 사용자 조회 (보안을 위해 예외 메시지 통일)
                 User user = userRepository.findByUsername(request.getUsername())
-                                .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다."));
+                                .orElseThrow(() -> {
+                                        log.debug("로그인 실패: 사용자 '{}'를 찾을 수 없습니다.", request.getUsername());
+                                        return new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
+                                });
 
                 // 2. 비밀번호 검증
                 if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                        log.debug("로그인 실패: 사용자 '{}'의 비밀번호가 일치하지 않습니다.", request.getUsername());
                         throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
                 }
 
