@@ -121,23 +121,22 @@ jobs:
             git reset --hard origin/main
             git clean -fd
 
-            # Update envs in .env.prod
+            # Update envs in .env.prod (only if non-empty to avoid overwriting with blank)
             touch .env.prod
-            sed -i '/^ECR_REGISTRY=/d' .env.prod || true
-            echo "ECR_REGISTRY=${{ env.ECR_REGISTRY }}" >> .env.prod
-            sed -i '/^DB_URL=/d' .env.prod || true
-            echo "DB_URL=${DB_URL}" >> .env.prod
-            sed -i '/^DB_USERNAME=/d' .env.prod || true
-            echo "DB_USERNAME=${DB_USERNAME}" >> .env.prod
-            sed -i '/^DB_PASSWORD=/d' .env.prod || true
-            echo "DB_PASSWORD=${DB_PASSWORD}" >> .env.prod
-            sed -i '/^JWT_SECRET=/d' .env.prod || true
-            echo "JWT_SECRET=${JWT_SECRET}" >> .env.prod
-            sed -i '/^CORS_ALLOWED_ORIGINS=/d' .env.prod || true
-            echo "CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}" >> .env.prod
+            [ -n "${{ env.ECR_REGISTRY }}" ] && sed -i '/^ECR_REGISTRY=/d' .env.prod && echo "ECR_REGISTRY=${{ env.ECR_REGISTRY }}" >> .env.prod
+            [ -n "$DB_URL" ] && sed -i '/^DB_URL=/d' .env.prod && echo "DB_URL=$DB_URL" >> .env.prod
+            [ -n "$DB_USERNAME" ] && sed -i '/^DB_USERNAME=/d' .env.prod && echo "DB_USERNAME=$DB_USERNAME" >> .env.prod
+            [ -n "$DB_PASSWORD" ] && sed -i '/^DB_PASSWORD=/d' .env.prod && echo "DB_PASSWORD=$DB_PASSWORD" >> .env.prod
+            [ -n "$JWT_SECRET" ] && sed -i '/^JWT_SECRET=/d' .env.prod && echo "JWT_SECRET=$JWT_SECRET" >> .env.prod
+            [ -n "$CORS_ALLOWED_ORIGINS" ] && sed -i '/^CORS_ALLOWED_ORIGINS=/d' .env.prod && echo "CORS_ALLOWED_ORIGINS=$CORS_ALLOWED_ORIGINS" >> .env.prod
 
             docker-compose --env-file .env.prod -f docker-compose.prod.yml pull aidiary-app
             docker-compose --env-file .env.prod -f docker-compose.prod.yml up -d aidiary-app
+            
+            echo "Waiting for container to start..."
+            sleep 10
+            docker-compose -f docker-compose.prod.yml logs --tail 50 aidiary-app
+            
             docker image prune -f
 
   # faceapi 빌드 → ECR push → EC2 pull
