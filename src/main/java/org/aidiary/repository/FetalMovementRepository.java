@@ -17,5 +17,8 @@ public interface FetalMovementRepository extends JpaRepository<FetalMovement, Lo
     List<FetalMovement> findByUserIdAndMovementTimeBetweenOrderByMovementTimeAsc(
             Long userId, LocalDateTime from, LocalDateTime to);
 
+    Page<FetalMovement> findByUserIdAndMovementTimeBetween(
+            Long userId, LocalDateTime from, LocalDateTime to, Pageable pageable);
+
     long countByUserIdAndMovementTimeBetween(Long userId, LocalDateTime from, LocalDateTime to);
 }

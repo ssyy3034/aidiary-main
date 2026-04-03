@@ -36,4 +36,15 @@ public class PregnancyWeekController {
     public ResponseEntity<PregnancyWeekDTO> getWeek(@PathVariable int week) {
         return ResponseEntity.ok(pregnancyWeekCacheService.getCommonWeekContent(week));
     }
+
+    @GetMapping("/test/{userId}")
+    public ResponseEntity<PregnancyWeekDTO> testCurrentWeek(@PathVariable Long userId) {
+        return pregnancyWeekService.getCurrentWeekData(userId)
+                .map(baseDto -> {
+                    UserContext ctx = userContextService.buildContext(userId, baseDto.getWeek());
+                    return pregnancyWeekCacheService.getPersonalizedWeekContent(ctx);
+                })
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
+    }
 }

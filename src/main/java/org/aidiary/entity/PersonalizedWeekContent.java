@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "personalized_week_content",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"userId", "week", "contextHash"})
+        uniqueConstraints = @UniqueConstraint(columnNames = {"userId", "week"})
 )
 @Getter
 @Setter

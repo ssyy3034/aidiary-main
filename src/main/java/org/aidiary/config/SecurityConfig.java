@@ -48,7 +48,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**")
                         .permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/info", "/actuator/metrics/**").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info", "/actuator/metrics/**", "/actuator/prometheus").permitAll()
                         .requestMatchers("/actuator/**").authenticated()
                         .requestMatchers("/api/diary-ai/daily-question").permitAll()
                         .requestMatchers("/api/diary-ai/images/**").permitAll()
@@ -61,7 +61,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/images/**").authenticated()
                         .requestMatchers("/api/fetal-movement/**").authenticated()
                         .requestMatchers("/api/health/**").authenticated()
-                        .requestMatchers("/api/pregnancy/**").authenticated()
+                        .requestMatchers("/api/pregnancy/**").permitAll()
                         .requestMatchers("/api/personality/**").authenticated()
                         .requestMatchers("/api/benefits/**").authenticated()
                         // 나머지는 인증 필요

@@ -19,10 +19,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @EnableScheduling
 public class AsyncConfig {
 
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
+
 
     @Bean(name = "imageTaskExecutor")
     public Executor imageTaskExecutor() {

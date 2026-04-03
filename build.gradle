@@ -74,6 +74,10 @@ dependencies {
     // Jackson - Spring Boot manages versions (do NOT pin manually; causes JSR-310 mismatch)
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
+    // Resilience
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

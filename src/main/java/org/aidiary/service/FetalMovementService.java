@@ -59,7 +59,7 @@ public class FetalMovementService {
 
         List<FetalMovementDTO> dtos = todayList.stream()
                 .map(FetalMovementDTO::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
 
         return FetalMovementSummaryDTO.builder()
                 .todayCount(todayList.size())
@@ -73,23 +73,13 @@ public class FetalMovementService {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.atTime(LocalTime.MAX);
 
-        List<FetalMovement> all = fetalMovementRepository
-                .findByUserIdAndMovementTimeBetweenOrderByMovementTimeAsc(userId, start, end);
+        // 정렬 조건을 포함한 Pageable 생성 (최신순)
+        Pageable pageable = PageRequest.of(page, size, org.springframework.data.domain.Sort.by("movementTime").descending());
 
-        // 역순 (최신순)
-        List<FetalMovementDTO> dtos = all.stream()
-                .sorted((a, b) -> b.getMovementTime().compareTo(a.getMovementTime()))
-                .map(FetalMovementDTO::fromEntity)
-                .collect(Collectors.toList());
-
-        Pageable pageable = PageRequest.of(page, size);
-        int from = (int) pageable.getOffset();
-        int to = Math.min(from + size, dtos.size());
-        List<FetalMovementDTO> pageContent = from >= dtos.size()
-                ? List.of()
-                : dtos.subList(from, to);
-
-        return new PageImpl<>(pageContent, pageable, dtos.size());
+        // DB 레벨에서 필요한 만큼만 조회 및 즉시 DTO 변환
+        return fetalMovementRepository
+                .findByUserIdAndMovementTimeBetween(userId, start, end, pageable)
+                .map(FetalMovementDTO::fromEntity);
     }
 
     @Transactional

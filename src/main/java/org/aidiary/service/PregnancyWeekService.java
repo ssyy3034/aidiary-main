@@ -6,6 +6,7 @@ import org.aidiary.entity.Child;
 import org.aidiary.exception.ResourceNotFoundException;
 import org.aidiary.repository.ChildRepository;
 import org.aidiary.repository.UserRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -235,6 +236,7 @@ public class PregnancyWeekService {
                 .tip("의사의 지시에 따라 유도 분만 또는 제왕절개를 고려하세요.").build());
     }
 
+    @Cacheable(value = "pregnancy_static", key = "#week")
     public PregnancyWeekDTO getWeekData(int week) {
         if (week < 1 || week > 42) {
             throw new IllegalArgumentException("임신 주차는 1~42 사이여야 합니다.");
@@ -242,6 +244,7 @@ public class PregnancyWeekService {
         return WEEK_DATA.get(week);
     }
 
+    @Cacheable(value = "pregnancy_week", key = "#userId", unless = "#result == null")
     public java.util.Optional<PregnancyWeekDTO> getCurrentWeekData(Long userId) {
         java.util.Optional<Child> childOpt = childRepository.findById(userId);
         if (childOpt.isEmpty()) return java.util.Optional.empty();
