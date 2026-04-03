@@ -3,27 +3,28 @@ package org.aidiary.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aidiary.dto.response.PregnancyWeekDTO;
+import org.aidiary.entity.CommonWeekContent;
 import org.aidiary.entity.PersonalizedWeekContent;
+import org.aidiary.repository.CommonWeekContentRepository;
 import org.aidiary.repository.PersonalizedWeekContentRepository;
 import org.aidiary.service.PregnancyWeekCacheService;
 import org.aidiary.service.UserContextService.UserContext;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -55,200 +56,232 @@ public class CachingPregnancyWeekService implements PregnancyWeekCacheService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final PersonalizedWeekContentRepository personalizedContentRepository;
+    private final CommonWeekContentRepository commonContentRepository;
     private final Random random = new Random();
 
     @Value("${api.flask.url}")
     private String flaskApiUrl;
 
+    @Value("${app.cache.enabled:true}")
+    private boolean cacheEnabled;
+
     @Override
     public PregnancyWeekDTO getPersonalizedWeekContent(UserContext ctx) {
         int week = ctx.week();
+        validateWeek(week);
 
-        if (!VALID_WEEKS.contains(week)) {
-            blockInvalidWeek(week);
-        }
-
-        if (ctx.emotionSummary() == null && ctx.latestWeight() == null) {
+        if (ctx.isMissingContext()) {
             return getCommonWeekContent(week);
         }
 
-        String cacheKey = ctx.userId() + ":" + ctx.contextHash();
+        String cacheKey = generateCacheKey(ctx);
         String redisKey = KEY_PREFIX + cacheKey;
 
-        // 1. L1 Caffeine
-        PregnancyWeekDTO local = localCache.getIfPresent(cacheKey);
-        if (local != null) {
-            log.debug("[L1 HIT] personalized: userId={}, week={}", ctx.userId(), week);
-            return local;
-        }
-
-        // 2. L2 Redis
-        try {
-            String cached = redisTemplate.opsForValue().get(redisKey);
-            if (cached != null) {
-                PregnancyWeekDTO dto = objectMapper.readValue(cached, PregnancyWeekDTO.class);
-                localCache.put(cacheKey, dto);
-                log.debug("[L2 HIT] personalized: userId={}, week={}", ctx.userId(), week);
-                return dto;
-            }
-        } catch (Exception e) {
-            log.error("[L2] Redis 장애, DB로 Fallback: {}", e.getMessage());
-        }
-
-        // 3. L3 DB
-        var dbOpt = personalizedContentRepository
-                .findByUserIdAndWeekAndContextHash(ctx.userId(), week, ctx.contextHash());
-        if (dbOpt.isPresent()) {
-            try {
-                PregnancyWeekDTO dto = objectMapper.readValue(dbOpt.get().getContent(), PregnancyWeekDTO.class);
-                populateCache(cacheKey, redisKey, dto);
-                log.debug("[DB HIT] personalized: userId={}, week={}", ctx.userId(), week);
-                return dto;
-            } catch (Exception e) {
-                log.warn("[DB] JSON 파싱 실패, Flask 재호출: {}", e.getMessage());
-            }
-        }
-
-        // 4. Flask(Gemini) 호출
-        log.info("[MISS] Flask API 호출: userId={}, week={}", ctx.userId(), week);
-        PregnancyWeekDTO dto = callFlaskWithContext(week, ctx);
-
-        if (dto != null) {
-            populateCache(cacheKey, redisKey, dto);
-            persistToDb(ctx, dto);
-        }
-
-        return dto;
+        return lookupPersonalizedCache(cacheKey, redisKey)
+                .or(() -> lookupPersonalizedDb(ctx))
+                .orElseGet(() -> fetchPersonalizedFromApi(week, ctx, cacheKey, redisKey));
     }
 
     @Override
     public PregnancyWeekDTO getCommonWeekContent(int week) {
         String key = KEY_PREFIX + week;
+        validateWeek(week);
 
+        return lookupCommonLocalCache(week)
+                .or(() -> lookupCommonRedisCache(key, week))
+                .or(() -> lookupCommonDb(week))
+                .orElseGet(() -> fetchCommonFromApi(week, key));
+    }
+
+    // --- Private Helper Methods (Separation of Concerns) ---
+
+    private void validateWeek(int week) {
         if (!VALID_WEEKS.contains(week)) {
             blockInvalidWeek(week);
         }
+    }
 
-        // L1
-        PregnancyWeekDTO local = commonLocalCache.getIfPresent(week);
-        if (local != null) return local;
+    private String generateCacheKey(UserContext ctx) {
+        return ctx.userId() + ":" + ctx.week() + ":" + ctx.contextHash();
+    }
 
-        // L2 Redis
-        try {
-            String cached = redisTemplate.opsForValue().get(key);
-            if (cached != null) {
-                PregnancyWeekDTO dto = objectMapper.readValue(cached, PregnancyWeekDTO.class);
-                commonLocalCache.put(week, dto);
-                return dto;
-            }
-        } catch (Exception e) {
-            log.error("[L2] Redis 장애, Flask API로 Fallback: {}", e.getMessage());
-        }
+    private Optional<PregnancyWeekDTO> lookupPersonalizedCache(String cacheKey, String redisKey) {
+        if (!cacheEnabled) return Optional.empty();
 
-        // Flask GET (기존 방식)
-        log.info("[MISS/FALLBACK] Flask API 호출: week={}", week);
-        String url = flaskApiUrl + "/api/pregnancy/week-content?week=" + week;
-        PregnancyWeekDTO dto = restTemplate.getForObject(url, PregnancyWeekDTO.class);
+        return Optional.ofNullable(localCache.getIfPresent(cacheKey))
+                .or(() -> {
+                    Optional<PregnancyWeekDTO> redisDto = fetchFromRedis(redisKey);
+                    redisDto.ifPresent(dto -> localCache.put(cacheKey, dto));
+                    return redisDto;
+                });
+    }
 
-        if (dto != null) {
-            try {
-                long baseTtl = Duration.ofHours(24).getSeconds();
-                long jitter = (long) (random.nextDouble() * Duration.ofHours(2).getSeconds());
-                String json = objectMapper.writeValueAsString(dto);
-                redisTemplate.opsForValue().set(key, json, Duration.ofSeconds(baseTtl + jitter));
-            } catch (Exception e) {
-                log.warn("[SET] Redis 저장 실패: {}", e.getMessage());
-            }
+    private Optional<PregnancyWeekDTO> lookupCommonLocalCache(int week) {
+        return cacheEnabled ? Optional.ofNullable(commonLocalCache.getIfPresent(week)) : Optional.empty();
+    }
+
+    private Optional<PregnancyWeekDTO> lookupCommonRedisCache(String key, int week) {
+        if (!cacheEnabled) return Optional.empty();
+        return fetchFromRedis(key).map(dto -> {
             commonLocalCache.put(week, dto);
-        }
+            return dto;
+        });
+    }
 
+    private Optional<PregnancyWeekDTO> lookupPersonalizedDb(UserContext ctx) {
+        return personalizedContentRepository.findByUserIdAndWeekAndContextHash(ctx.userId(), ctx.week(), ctx.contextHash())
+                .flatMap(entity -> parseContent(entity.getContent()));
+    }
+
+    private Optional<PregnancyWeekDTO> lookupCommonDb(int week) {
+        return commonContentRepository.findByWeek(week).flatMap(entity -> parseContent(entity.getContent()));
+    }
+
+    private PregnancyWeekDTO fetchPersonalizedFromApi(int week, UserContext ctx, String cacheKey, String redisKey) {
+        log.info("[MISS] Personalized API 호출: userId={}, week={}", ctx.userId(), week);
+        PregnancyWeekDTO dto = callFlaskWithContext(week, ctx);
+        if (dto != null) {
+            saveToCache(cacheKey, redisKey, dto);
+            persistToDb(ctx, dto);
+        }
         return dto;
     }
 
+    private PregnancyWeekDTO fetchCommonFromApi(int week, String key) {
+        log.info("[MISS/FALLBACK] Common API 호출: week={}", week);
+        String url = flaskApiUrl + "/api/pregnancy/week-content?week=" + week;
+        try {
+            PregnancyWeekDTO dto = callCommonFlaskWithCircuitBreaker(url);
+            if (dto != null) {
+                saveCommonToDb(week, dto);
+                saveCommonToCache(key, week, dto);
+            }
+            return dto;
+        } catch (Exception e) {
+            log.error("[CircuitBreaker] Flask 공통 콘텐츠 호출 실패: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private Optional<PregnancyWeekDTO> fetchFromRedis(String key) {
+        try {
+            String cached = redisTemplate.opsForValue().get(key);
+            return cached != null ? Optional.ofNullable(objectMapper.readValue(cached, PregnancyWeekDTO.class)) : Optional.empty();
+        } catch (Exception e) {
+            log.warn("[L2] Redis 조회 에러: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private Optional<PregnancyWeekDTO> parseContent(String content) {
+        try {
+            return Optional.ofNullable(objectMapper.readValue(content, PregnancyWeekDTO.class));
+        } catch (Exception e) {
+            log.warn("[DB] JSON 파싱 에러: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private void saveToCache(String cacheKey, String redisKey, PregnancyWeekDTO dto) {
+        if (!cacheEnabled) return;
+        localCache.put(cacheKey, dto);
+        writeToRedis(redisKey, dto);
+    }
+
+    private void saveCommonToCache(String key, int week, PregnancyWeekDTO dto) {
+        if (!cacheEnabled) return;
+        commonLocalCache.put(week, dto);
+        writeToRedis(key, dto);
+    }
+
+    private void writeToRedis(String key, PregnancyWeekDTO dto) {
+        try {
+            long ttl = Duration.ofHours(24).getSeconds() + (long) (random.nextDouble() * 7200);
+            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(dto), Duration.ofSeconds(ttl));
+        } catch (Exception e) {
+            log.warn("[REDIS] 저장 실패: {}", e.getMessage());
+        }
+    }
+
+    @CircuitBreaker(name = "flaskApi", fallbackMethod = "fallbackFlaskWithContext")
     private PregnancyWeekDTO callFlaskWithContext(int week, UserContext ctx) {
         String url = flaskApiUrl + "/api/pregnancy/week-content";
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("week", week);
-
-        Map<String, Object> context = new HashMap<>();
-        context.put("emotionSummary", ctx.emotionSummary());
-        if (ctx.latestWeight() != null) {
-            context.put("weight", ctx.latestWeight());
-        }
-        if (ctx.latestSystolic() != null && ctx.latestDiastolic() != null) {
-            context.put("bloodPressure", ctx.latestSystolic() + "/" + ctx.latestDiastolic());
-        }
-        body.put("context", context);
-
+        Map<String, Object> body = Map.of(
+            "week", week,
+            "context", ctx.toMap()
+        );
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
         return restTemplate.postForObject(url, new HttpEntity<>(body, headers), PregnancyWeekDTO.class);
     }
 
-    private void populateCache(String cacheKey, String redisKey, PregnancyWeekDTO dto) {
-        localCache.put(cacheKey, dto);
-        try {
-            long baseTtl = Duration.ofHours(24).getSeconds();
-            long jitter = (long) (random.nextDouble() * Duration.ofHours(2).getSeconds());
-            String json = objectMapper.writeValueAsString(dto);
-            redisTemplate.opsForValue().set(redisKey, json, Duration.ofSeconds(baseTtl + jitter));
-        } catch (Exception e) {
-            log.warn("[SET] Redis 저장 실패: {}", e.getMessage());
-        }
+    private PregnancyWeekDTO fallbackFlaskWithContext(int week, UserContext ctx, Throwable t) {
+        log.warn("[Fallback] API 실패. 공통 콘텐츠로 대체: {}", t.getMessage());
+        return getCommonWeekContent(week);
+    }
+
+    @CircuitBreaker(name = "flaskApi")
+    private PregnancyWeekDTO callCommonFlaskWithCircuitBreaker(String url) {
+        return restTemplate.getForObject(url, PregnancyWeekDTO.class);
     }
 
     private void persistToDb(UserContext ctx, PregnancyWeekDTO dto) {
         try {
             String json = objectMapper.writeValueAsString(dto);
-            PersonalizedWeekContent entity = PersonalizedWeekContent.builder()
-                    .userId(ctx.userId())
-                    .week(ctx.week())
-                    .contextHash(ctx.contextHash())
-                    .content(json)
-                    .build();
-            personalizedContentRepository.save(entity);
+            personalizedContentRepository.findByUserIdAndWeek(ctx.userId(), ctx.week())
+                    .stream().findFirst()
+                    .map(existing -> {
+                        existing.setContextHash(ctx.contextHash());
+                        existing.setContent(json);
+                        return existing;
+                    })
+                    .or(() -> Optional.of(PersonalizedWeekContent.builder()
+                            .userId(ctx.userId())
+                            .week(ctx.week())
+                            .contextHash(ctx.contextHash())
+                            .content(json)
+                            .build()))
+                    .ifPresent(personalizedContentRepository::save);
         } catch (Exception e) {
-            log.warn("[DB] 영속화 실패 (서비스 영향 없음): {}", e.getMessage());
+            log.warn("[DB] 개인화 영속화 실패: {}", e.getMessage());
+        }
+    }
+
+    private void saveCommonToDb(int week, PregnancyWeekDTO dto) {
+        try {
+            String json = objectMapper.writeValueAsString(dto);
+            commonContentRepository.findByWeek(week)
+                    .map(existing -> {
+                        existing.setContent(json);
+                        return existing;
+                    })
+                    .or(() -> Optional.of(CommonWeekContent.builder()
+                            .week(week)
+                            .content(json)
+                            .build()))
+                    .ifPresent(commonContentRepository::save);
+        } catch (Exception e) {
+            log.warn("[DB] 공통 영속화 실패: {}", e.getMessage());
         }
     }
 
     private void blockInvalidWeek(int week) {
-        try {
-            String badKey = "bad:" + KEY_PREFIX + week;
-            String marker = redisTemplate.opsForValue().get(badKey);
-            if (NULL_MARKER.equals(marker)) {
-                throw new IllegalArgumentException("유효하지 않은 임신 주차: " + week);
-            }
-            redisTemplate.opsForValue().set(badKey, NULL_MARKER, Duration.ofMinutes(5));
-        } catch (IllegalArgumentException e) {
-            throw e;
-        } catch (Exception e) {
-            log.warn("[Penetration] Redis 연결 실패: {}", e.getMessage());
+        String badKey = "bad:" + KEY_PREFIX + week;
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(badKey))) {
+            throw new IllegalArgumentException("유효하지 않은 주차: " + week);
         }
-        throw new IllegalArgumentException("유효하지 않은 임신 주차: " + week);
+        redisTemplate.opsForValue().set(badKey, NULL_MARKER, Duration.ofMinutes(5));
+        throw new IllegalArgumentException("유효하지 않은 주차: " + week);
     }
 
     @Override
     public void warmup() {
-        log.info("임신 주차 공통 콘텐츠 사전 로딩 시작");
-        int loaded = 0;
-        for (int week = 1; week <= 42; week++) {
-            if (Boolean.TRUE.equals(redisTemplate.hasKey(KEY_PREFIX + week))) {
-                continue;
-            }
-            try {
+        log.info("임신 주차 콘텐츠 사전 로딩 시작");
+        VALID_WEEKS.forEach(week -> {
+            if (Boolean.FALSE.equals(redisTemplate.hasKey(KEY_PREFIX + week))) {
                 getCommonWeekContent(week);
-                loaded++;
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Exception e) {
-                log.warn("[Warmup] week:{} 로딩 실패: {}", week, e.getMessage());
             }
-        }
-        log.info("사전 로딩 완료: {}개 신규", loaded);
+        });
+        log.info("Warmup 완료");
     }
 }
