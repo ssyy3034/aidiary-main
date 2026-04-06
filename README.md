@@ -122,6 +122,7 @@ flowchart TB
     classDef docker fill:#e6f3ff,stroke:#0066cc,stroke-width:2px,stroke-dasharray: 5 5;
     class AWS cloud;
     class Docker docker;
+```
 ## 🚀 설치 및 실행
 
 ### 📋 사전 요구사항
