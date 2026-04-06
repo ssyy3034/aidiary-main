@@ -75,47 +75,53 @@
 - **라우팅 최적화**: 클라이언트 요청 성격에 따라 S3/CF와 EC2로 분산 처리하여 서버 부하를 최소화했습니다.
 - **비동기 AI 파이프라인**: RabbitMQ 메시지 큐를 활용하여 무거운 감정 분석 및 이미지 생성 작업을 백그라운드에서 배칭 처리합니다.
 - **중앙 집중식 로직**: 비즈니스 로직 및 AI 연동 연산은 Spring Boot 백엔드에서 통합 관리됩니다.
-
 ### 🖼 시스템 아키텍처 다이어그램
 
 ```mermaid
-architecture-beta
-    group aws(cloud)[AWS Cloud]
-    group ec2(server)[EC2 - t3.small] in aws
-    group docker(system)[Docker Compose] in ec2
-    
-    service cf(internet)[CloudFront\n(SSL/TLS 1.2)] in aws
-    service s3(server)[Amazon S3\n(SPA React)] in aws
-    service rds(database)[RDS\n(MariaDB 11.8)] in aws
-    
-    service spring(server)[Spring Boot\n(Main API Server)] in docker
-    service flask(server)[Flask AI Service\n(Worker: 5000/8000)] in docker
-    service rabbitmq(server)[RabbitMQ\n(Message Queue)] in docker
-    service redis(database)[Redis\n(Cache & Lock)] in docker
-    service monitoring(server)[Prometheus\n+ Grafana] in docker
-    
-    service ext_ai(internet)[External LLMs\n(OpenAI, Gemini)]
-    
-    cf:B --> T:s3
-    cf:B --> T:spring
-    cf:R --> L:flask
-    
-    spring:L --> R:rds
-    spring:R --> L:redis
-    spring:B --> T:rabbitmq
-    
-    rabbitmq:R --> L:flask
-    flask:R --> L:ext_ai
-    flask:T --> B:spring
-    
-    monitoring:T --> B:redis
-    monitoring:T --> B:spring
-```
+flowchart TB
+    ExtAI["External LLMs\n(OpenAI, Gemini)"]
 
-![System Architecture](./docs/architecture.png)
+    subgraph AWS ["☁️ AWS Cloud"]
+        CF["CloudFront\n(SSL/TLS 1.2)"]
+        S3["Amazon S3\n(SPA React)"]
+        RDS[("RDS\n(MariaDB 11.8)")]
 
----
+        subgraph EC2 ["💻 EC2 - t3.small"]
+            subgraph Docker ["🐳 Docker Compose"]
+                direction TB
+                Spring["Spring Boot\n(Main API Server)"]
+                Flask["Flask AI Service\n(Worker: 5000/8000)"]
+                RabbitMQ{"RabbitMQ\n(Message Queue)"}
+                Redis[("Redis\n(Cache & Lock)")]
+                Monitoring["Prometheus\n+ Grafana"]
+            end
+        end
+    end
 
+    %% 클라이언트 및 외부 라우팅
+    CF --> S3
+    CF --> Spring
+    CF --> Flask
+
+    %% 내부 백엔드 및 데이터베이스 통신
+    Spring --> RDS
+    Spring --> Redis
+    Spring --> RabbitMQ
+
+    %% AI 및 비동기 처리 파이프라인
+    RabbitMQ --> Flask
+    Flask --> ExtAI
+    Flask --> Spring
+
+    %% 모니터링 시스템
+    Monitoring -.-> Redis
+    Monitoring -.-> Spring
+
+    %% 스타일링 (선택 사항)
+    classDef cloud fill:#f9f9f9,stroke:#e68a00,stroke-width:2px;
+    classDef docker fill:#e6f3ff,stroke:#0066cc,stroke-width:2px,stroke-dasharray: 5 5;
+    class AWS cloud;
+    class Docker docker;
 ## 🚀 설치 및 실행
 
 ### 📋 사전 요구사항
