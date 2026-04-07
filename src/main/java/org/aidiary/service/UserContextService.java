@@ -32,7 +32,22 @@ public class UserContextService {
             Integer latestSystolic,
             Integer latestDiastolic,
             String contextHash
-    ) {}
+    ) {
+        public boolean isMissingContext() {
+            return emotionSummary == null && latestWeight == null 
+                    && latestSystolic == null && latestDiastolic == null;
+        }
+
+        public Map<String, Object> toMap() {
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("emotionSummary", emotionSummary);
+            if (latestWeight != null) map.put("weight", latestWeight);
+            if (latestSystolic != null && latestDiastolic != null) {
+                map.put("bloodPressure", latestSystolic + "/" + latestDiastolic);
+            }
+            return map;
+        }
+    }
 
     public UserContext buildContext(Long userId, int week) {
         // 최근 7일 감정 라벨 조회
@@ -56,7 +71,11 @@ public class UserContextService {
         }
 
         // 컨텍스트 해시 생성
-        String hash = generateContextHash(userId, week, recentEmotions, latestWeight, latestSystolic);
+        String emotionCategory = categorizeEmotion(recentEmotions);
+        String bpCategory = categorizeBloodPressure(latestSystolic, latestDiastolic);
+        String weightBucket = latestWeight == null ? "UNKNOWN" : String.valueOf(Math.round(latestWeight));
+
+        String hash = generateContextHash(userId, week, emotionCategory, weightBucket, bpCategory);
 
         return new UserContext(week, userId, recentEmotions, emotionSummary,
                 latestWeight, latestSystolic, latestDiastolic, hash);
@@ -90,10 +109,10 @@ public class UserContextService {
         }
     }
 
-    private String generateContextHash(Long userId, int week, List<String> emotions,
-                                        Double weight, Integer systolic) {
-        String raw = userId + ":" + week + ":" + emotions.toString()
-                + ":" + weight + ":" + systolic;
+    private String generateContextHash(Long userId, int week, String emotionCategory,
+                                        String weightBucket, String bpCategory) {
+        String raw = userId + ":" + week + ":" + emotionCategory
+                + ":" + weightBucket + ":" + bpCategory;
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(raw.getBytes(StandardCharsets.UTF_8));
@@ -107,5 +126,27 @@ public class UserContextService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 not available", e);
         }
+    }
+
+    private String categorizeEmotion(List<String> emotions) {
+        if (emotions == null || emotions.isEmpty()) return "NEUTRAL";
+        long total = emotions.size();
+        long sadCount = emotions.stream().filter("sad"::equals).count();
+        long happyCount = emotions.stream().filter("happy"::equals).count();
+        
+        if (sadCount > total / 2) {
+            return "NEGATIVE";
+        } else if (happyCount > total / 2) {
+            return "POSITIVE";
+        } else {
+            return "NEUTRAL";
+        }
+    }
+
+    private String categorizeBloodPressure(Integer systolic, Integer diastolic) {
+        if (systolic == null || diastolic == null) return "UNKNOWN";
+        if (systolic < 120 && diastolic < 80) return "NORMAL";
+        if (systolic >= 130 || diastolic >= 80) return "HIGH";
+        return "ELEVATED";
     }
 }
