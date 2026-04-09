@@ -19,6 +19,7 @@ public class RabbitMQConfig {
     // DLQ (Dead Letter Queue) — 실패한 메시지를 별도 보관
     public static final String IMAGE_DLQ = "image-processing.dlq";
     public static final String IMAGE_DLX = "image-exchange.dlx";
+    public static final String IMAGE_WAIT_QUEUE = "image-processing.retry.wait";
 
     @Bean
     public Queue imageQueue() {
@@ -52,6 +53,15 @@ public class RabbitMQConfig {
     @Bean
     public Binding deadLetterBinding(Queue deadLetterQueue, DirectExchange deadLetterExchange) {
         return BindingBuilder.bind(deadLetterQueue).to(deadLetterExchange).with(IMAGE_DLQ);
+    }
+
+    // 지수적 백오프를 위한 지연 대기 큐
+    @Bean
+    public Queue imageWaitQueue() {
+        return QueueBuilder.durable(IMAGE_WAIT_QUEUE)
+                .withArgument("x-dead-letter-exchange", IMAGE_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", IMAGE_ROUTING_KEY)
+                .build();
     }
 
     // JSON 직렬화
