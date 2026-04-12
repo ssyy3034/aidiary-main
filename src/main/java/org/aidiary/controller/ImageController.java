@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.aidiary.service.ImageErrorMapper;
 import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
@@ -24,11 +25,10 @@ public class ImageController {
 
     private final ImageService imageService;
     private final ImageJobStore imageJobStore;
+    private final ImageErrorMapper errorMapper;
 
     /**
      * 이미지 분석 요청 제출.
-     * Flask 처리(30초+)를 기다리지 않고 즉시 jobId를 반환한다.
-     * MultipartFile은 HTTP 요청 생명주기에 묶여있으므로 byte[]로 읽은 뒤 비동기 스레드에 전달한다.
      */
     @PostMapping("/analyze")
     public ResponseEntity<Map<String, String>> submitAnalysis(
@@ -129,9 +129,26 @@ public class ImageController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
         } else {
-            imageJobStore.fail(jobId, error != null ? error : "Unknown ML Error");
+            String userFriendlyMessage = mapToUserFriendlyMessage(error);
+            imageJobStore.fail(jobId, userFriendlyMessage);
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    private String mapToUserFriendlyMessage(String technicalError) {
+        if (technicalError == null) return "알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+        
+        if (technicalError.contains("No face detected")) {
+            return "사진에서 얼굴을 찾을 수 없습니다. 정면이 잘 보이는 밝은 사진으로 다시 시도해 주세요.";
+        }
+        if (technicalError.contains("Multiple faces detected")) {
+            return "사진에 여러 명의 얼굴이 감지되었습니다. 한 명의 얼굴만 나온 사진을 사용해 주세요.";
+        }
+        if (technicalError.contains("Image quality too low")) {
+            return "사진의 화질이 너무 낮아 분석할 수 없습니다. 더 선명한 사진을 사용해 주세요.";
+        }
+        
+        return "이미지 분석 중 오류가 발생했습니다: " + technicalError;
     }
 }
