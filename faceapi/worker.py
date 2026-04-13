@@ -77,39 +77,57 @@ def process_message(ch, method, properties, body):
         with open(p2_path, 'wb') as f:
             f.write(parent2_bytes)
 
-        # 2. ML 파이프라인 연산 (ImageGenerator 활용)
-        generator = get_image_generator()
-        result = generator.process_image_generation(p1_path, p2_path)
+        # 2. ML 파이프라인 연산
+        try:
+            generator = get_image_generator()
+            result = generator.process_image_generation(p1_path, p2_path)
+            
+            if not result.get("success"):
+                raise ValueError(result.get("error", "Unknown ML failure"))
+                
+        except ValueError as e:
+            # 논리적 인식 오류 (Category 1) -> 실패 Webhook 및 ACK
+            logger.warning(f"ML Logical error for {job_id}: {e}")
+            send_failure_webhook(job_id, str(e))
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+            return
+        except Exception as e:
+            # 시스템 장애/예외 (Category 2) -> 상위 catch에서 NACK 처리 (재시도 유도)
+            logger.error(f"System error during ML for {job_id}: {e}")
+            raise 
 
-        # 3. Webhook으로 백엔드(Spring Boot)에 결과 리턴
-        if result.get("success"):
-            logger.info(f"Job {job_id} ML done, sending webhook")
+        # 3. Webhook 결과 전송
+        try:
             image_path = result.get("image_path")
+            send_success_webhook(job_id, image_path)
+            logger.info(f"Job {job_id} successfully completed and acknowledged")
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+        except Exception as e:
+            # 네트워크/서버 장애 (Category 3) -> NACK
+            logger.error(f"Webhook delivery failed for {job_id}: {e}")
+            raise
 
-            with open(image_path, 'rb') as img_file:
-                files = {'image': (os.path.basename(image_path), img_file, 'image/png')}
-                data = {'jobId': job_id, 'status': 'SUCCESS'}
-                resp = requests.post(WEBHOOK_URL, data=data, files=files)
-
-            if resp.status_code == 200:
-                logger.info(f"Webhook sent for {job_id}")
-            else:
-                logger.error(f"Webhook failed {resp.status_code}: {resp.text}")
-        else:
-            logger.error(f"ML failed for {job_id}: {result.get('error')}")
-            send_failure_webhook(job_id, result.get("error"))
-
-    except Exception as e:
-        logger.error(f"Worker error on {job_id}: {str(e)}")
-        send_failure_webhook(job_id, str(e))
+    except Exception:
+        # 모든 비정기적 시스템 예외 상황은 NACK를 통해 DLQ로 메시지 격리 (재시도 대상)
+        logger.error(f"Critical failure for {job_id}, signaling NACK/DLQ")
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
     finally:
-        # 메시지 처리 완료 ACK 전송
-        logger.info(f"ACK {job_id}")
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+        cleanup_temp_files(locals().get('p1_path'), locals().get('p2_path'))
 
-        for path in [locals().get('p1_path'), locals().get('p2_path')]:
-            if path and os.path.exists(path):
+def send_success_webhook(job_id, image_path):
+    with open(image_path, 'rb') as img_file:
+        files = {'image': (os.path.basename(image_path), img_file, 'image/png')}
+        data = {'jobId': job_id, 'status': 'SUCCESS'}
+        resp = requests.post(WEBHOOK_URL, data=data, files=files, timeout=15)
+        resp.raise_for_status()
+
+def cleanup_temp_files(*paths):
+    for path in paths:
+        if path and os.path.exists(path):
+            try:
                 os.remove(path)
+            except OSError:
+                pass
 
 def send_failure_webhook(job_id, error_msg):
     try:
